@@ -4,6 +4,7 @@ from .views import (
     DentistListView,
     TestimonialListView,
     GalleryListView,
+    AppointmentCreateView,
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path('dentists/', DentistListView.as_view(), name='dentist list'),
     path('testimonials/', TestimonialListView.as_view(), name='testimonial list'),
     path('gallery/', GalleryListView.as_view(), name='gallery list'),
+    path('appointments/', AppointmentCreateView.as_view(), name='appointment-create'),
 ]

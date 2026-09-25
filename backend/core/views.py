@@ -1,12 +1,13 @@
 from rest_framework import generics
 
-from .models import Service, Dentist, Testimonial, Gallery
+from .models import Service, Dentist, Testimonial, Gallery, Appointment
 
 from .serializers import (
     ServiceSerializer,
     DentistSerializer,
     TestimonialSerializer,
     GallerySerializer,
+    AppointmentSerializer,
 )
 
 
@@ -28,3 +29,7 @@ class TestimonialListView(generics.ListAPIView):
 class GalleryListView(generics.ListAPIView):
     queryset = Gallery.objects.all().order_by('-uploaded_at')
     serializer_class = GallerySerializer
+
+class AppointmentCreateView(generics.CreateAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
