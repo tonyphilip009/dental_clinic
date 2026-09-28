@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import Service, Dentist, Testimonial, Gallery, Appointment
+from .models import (
+    Service,
+    Dentist,
+    Testimonial,
+    Gallery,
+    Appointment,
+    DentistAvailability,
+    DentistTimeOff,
+)
 
 
 @admin.register(Service)
@@ -13,6 +21,30 @@ class ServiceAdmin(admin.ModelAdmin):
 class DentistAdmin(admin.ModelAdmin):
     list_display = ('name', 'specialization', 'years_experience')
     search_fields = ('name', 'specialization')
+
+
+@admin.register(DentistAvailability)
+class DentistAvailabilityAdmin(admin.ModelAdmin):
+    list_display = (
+        'dentist',
+        'day_of_week',
+        'start_time',
+        'end_time',
+        'slot_duration',
+    )
+    list_filter = ('dentist', 'day_of_week')
+    search_fields = ('dentist__name',)
+
+
+@admin.register(DentistTimeOff)
+class DentistTimeOffAdmin(admin.ModelAdmin):
+    list_display = (
+        'dentist',
+        'date',
+        'reason',
+    )
+    list_filter = ('dentist', 'date')
+    search_fields = ('dentist__name', 'reason')
 
 
 @admin.register(Testimonial)
@@ -30,6 +62,24 @@ class GalleryAdmin(admin.ModelAdmin):
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone', 'service', 'preferred_date', 'created_at')
-    list_filter = ('preferred_date', 'service', 'created_at')
-    search_fields = ('name', 'phone', 'email')
+    list_display = (
+        'name',
+        'phone',
+        'dentist',
+        'service',
+        'date',
+        'time_slot',
+        'status',
+        'created_at',
+    )
+    list_filter = (
+        'dentist',
+        'service',
+        'status',
+        'date',
+    )
+    search_fields = (
+        'name',
+        'phone',
+        'email',
+    )
