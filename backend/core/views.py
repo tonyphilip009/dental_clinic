@@ -1,9 +1,10 @@
 from datetime import datetime
 
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from rest_framework import generics
+from rest_framework import generics, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -43,6 +44,18 @@ class GalleryListView(generics.ListAPIView):
 class AppointmentCreateView(generics.CreateAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
+
+    def perform_create(self, serializer):
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError:
+            raise serializers.ValidationError(
+                {
+                    "time_slot": "Someone just booked this slot. "
+                    "Please choose another."
+                }
+            )
 
 
 class AvailabilityView(APIView):
