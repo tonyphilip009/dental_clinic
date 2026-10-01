@@ -48,16 +48,22 @@ class AppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "status", "created_at"]
 
     def validate_date(self, value):
-        if value < timezone.localdate():
+        if value is not None and value < timezone.localdate():
             raise serializers.ValidationError(
                 "Appointment date cannot be in the past."
             )
+
         return value
 
     def validate(self, attrs):
-        dentist = attrs["dentist"]
-        date = attrs["date"]
-        time_slot = attrs["time_slot"]
+        dentist = attrs.get("dentist")
+        date = attrs.get("date")
+        time_slot = attrs.get("time_slot")
+
+        # Let DRF handle missing required fields
+        # instead of trying to validate an incomplete appointment.
+        if not dentist or not date or not time_slot:
+            return attrs
 
         available = get_available_slots(dentist, date)
 
