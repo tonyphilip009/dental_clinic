@@ -1,27 +1,14 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../api";
+import { getErrorMessage, getServices } from "../api";
+import EmptyState from "../components/EmptyState";
+import ErrorMessage from "../components/ErrorMessage";
+import Loading from "../components/Loading";
 import ServiceIcon from "../components/ServiceIcon";
+import useFetch from "../hooks/useFetch";
 
 export default function Services() {
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/services/")
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : res.data.results;
-        setServices(data);
-      })
-      .catch(() => {
-        setError(
-          "We couldn't load our services right now. Please try again in a moment."
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, reload } = useFetch(getServices);
+  const services = data ?? [];
 
   return (
     <section className="bg-brand-light/20 py-16">
@@ -37,19 +24,26 @@ export default function Services() {
           </p>
         </div>
 
-        {loading && (
-          <p className="text-center text-gray-500">
-            Loading services...
-          </p>
-        )}
+        {loading && <Loading message="Loading services..." />}
 
         {error && (
-          <p className="text-center text-red-600">
-            {error}
-          </p>
+          <ErrorMessage
+            message={getErrorMessage(
+              error,
+              "We couldn't load our services right now."
+            )}
+            onRetry={reload}
+          />
         )}
 
-        {!loading && !error && (
+        {!loading && !error && services.length === 0 && (
+          <EmptyState
+            title="Our services list is coming soon"
+            message="Please contact the clinic to ask about the treatments we offer."
+          />
+        )}
+
+        {!loading && !error && services.length > 0 && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service) => (
               <Link

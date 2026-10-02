@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
-import api from "../api";
+import { getDentists, getErrorMessage } from "../api";
+import useFetch from "../hooks/useFetch";
+import EmptyState from "./EmptyState";
+import ErrorMessage from "./ErrorMessage";
+import Loading from "./Loading";
 
 function DentistPhoto({ photo, name }) {
   if (photo) {
@@ -28,32 +31,12 @@ function DentistPhoto({ photo, name }) {
 }
 
 export default function DentistsSection() {
-  const [dentists, setDentists] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/dentists/")
-      .then((res) => {
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.results;
-
-        setDentists(data);
-      })
-      .catch(() => {
-        setError(
-          "We couldn't load our dentists right now. Please try again in a moment."
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, reload } = useFetch(getDentists);
+  const dentists = data ?? [];
 
   return (
     <section className="py-16">
       <div className="mx-auto max-w-6xl px-4">
-
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold text-brand-dark">
             Meet Our Dentists
@@ -65,19 +48,26 @@ export default function DentistsSection() {
           </p>
         </div>
 
-        {loading && (
-          <p className="text-center text-gray-500">
-            Loading our team...
-          </p>
-        )}
+        {loading && <Loading message="Loading our team..." />}
 
         {error && (
-          <p className="text-center text-red-600">
-            {error}
-          </p>
+          <ErrorMessage
+            message={getErrorMessage(
+              error,
+              "We couldn't load our dentists right now."
+            )}
+            onRetry={reload}
+          />
         )}
 
-        {!loading && !error && (
+        {!loading && !error && dentists.length === 0 && (
+          <EmptyState
+            title="Meet our team soon"
+            message="Our dentist profiles will be available here shortly."
+          />
+        )}
+
+        {!loading && !error && dentists.length > 0 && (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {dentists.map((dentist) => (
               <div
@@ -108,7 +98,6 @@ export default function DentistsSection() {
             ))}
           </div>
         )}
-
       </div>
     </section>
   );

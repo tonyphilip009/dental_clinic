@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
-import api from "../api";
+import { getErrorMessage, getTestimonials } from "../api";
+import EmptyState from "../components/EmptyState";
+import ErrorMessage from "../components/ErrorMessage";
+import Loading from "../components/Loading";
+import useFetch from "../hooks/useFetch";
 
 function Stars({ rating }) {
   const safe = Math.max(0, Math.min(5, Number(rating) || 0));
@@ -36,56 +39,44 @@ function PatientPhoto({ photo, name }) {
 }
 
 export default function Testimonials() {
-  const [testimonials, setTestimonials] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/testimonials/")
-      .then((res) => {
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.results;
-
-        setTestimonials(data);
-      })
-      .catch(() => {
-        setError(
-          "We couldn't load patient reviews right now. Please try again in a moment."
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, reload } = useFetch(getTestimonials);
+  const testimonials = data ?? [];
 
   return (
     <section className="bg-brand-light/20 py-16">
       <div className="mx-auto max-w-6xl px-4">
-
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-bold text-brand-dark">
             What Our Patients Say
           </h1>
 
           <p className="mx-auto mt-3 max-w-2xl text-gray-600">
-            Our patients' comfort and confidence mean everything to us.
-            Here is what a few of them had to say.
+            Our patients' comfort and confidence mean everything to us. Here is
+            what a few of them had to say.
           </p>
         </div>
 
-        {loading && (
-          <p className="text-center text-gray-500">
-            Loading reviews...
-          </p>
-        )}
+        {loading && <Loading message="Loading reviews..." />}
 
         {error && (
-          <p className="text-center text-red-600">
-            {error}
-          </p>
+          <ErrorMessage
+            message={getErrorMessage(
+              error,
+              "We couldn't load patient reviews right now."
+            )}
+            onRetry={reload}
+          />
         )}
 
-        {!loading && !error && (
+        {!loading && !error && testimonials.length === 0 && (
+          <EmptyState
+            icon="⭐"
+            title="No reviews yet"
+            message="We'd love to hear about your visit. Reviews from our patients will appear here soon."
+          />
+        )}
+
+        {!loading && !error && testimonials.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {testimonials.map((t) => (
               <div
@@ -112,7 +103,6 @@ export default function Testimonials() {
             ))}
           </div>
         )}
-
       </div>
     </section>
   );
