@@ -32,7 +32,7 @@ class DentistListView(generics.ListAPIView):
 
 
 class TestimonialListView(generics.ListAPIView):
-    queryset = Testimonial.objects.all().order_by('-created_at')
+    queryset = Testimonial.objects.all()
     serializer_class = TestimonialSerializer
 
 

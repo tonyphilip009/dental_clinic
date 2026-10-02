@@ -49,9 +49,16 @@ class DentistTimeOffAdmin(admin.ModelAdmin):
 
 @admin.register(Testimonial)
 class TestimonialAdmin(admin.ModelAdmin):
-    list_display = ('patient_name', 'rating', 'created_at')
-    list_filter = ('rating', 'created_at')
-    search_fields = ('patient_name', 'message')
+    list_display = (
+        'id',
+        'patient_name',
+        'rating',
+    )
+    list_filter = ('rating',)
+    search_fields = (
+        'patient_name',
+        'message',
+    )
 
 
 @admin.register(Gallery)
