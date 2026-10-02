@@ -70,6 +70,15 @@ class BackendAPITests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(items(r)), 1)
 
+    def test_service_detail(self):
+        r = self.client.get(f"/api/services/{self.service.id}/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["name"], "Teeth Cleaning")
+
+    def test_service_detail_not_found(self):
+        r = self.client.get("/api/services/99999/")
+        self.assertEqual(r.status_code, 404)
+
     def test_dentists_list(self):
         r = self.client.get("/api/dentists/")
         self.assertEqual(r.status_code, 200)

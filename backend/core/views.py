@@ -22,7 +22,12 @@ from .availability import get_available_slots
 
 
 class ServiceListView(generics.ListAPIView):
-    queryset = Service.objects.all().order_by('-created_at')
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
+
+
+class ServiceDetailView(generics.RetrieveAPIView):
+    queryset = Service.objects.all()
     serializer_class = ServiceSerializer
 
 

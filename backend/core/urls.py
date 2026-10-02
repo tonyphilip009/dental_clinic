@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ServiceListView,
+    ServiceDetailView,
     DentistListView,
     TestimonialListView,
     GalleryListView,
@@ -11,15 +12,51 @@ from .views import (
 
 
 urlpatterns = [
-    path('services/', ServiceListView.as_view(), name='service list'),
-    path('dentists/', DentistListView.as_view(), name='dentist list'),
-    path('testimonials/', TestimonialListView.as_view(), name='testimonial list'),
-    path('gallery/', GalleryListView.as_view(), name='gallery list'),
-    path('appointments/', AppointmentCreateView.as_view(), name='appointment-create'),
+    # Services
+    path(
+        "services/",
+        ServiceListView.as_view(),
+        name="services"
+    ),
 
     path(
-        'availability/',
+        "services/<int:pk>/",
+        ServiceDetailView.as_view(),
+        name="service-detail"
+    ),
+
+    # Dentists
+    path(
+        "dentists/",
+        DentistListView.as_view(),
+        name="dentist list"
+    ),
+
+    # Testimonials
+    path(
+        "testimonials/",
+        TestimonialListView.as_view(),
+        name="testimonial list"
+    ),
+
+    # Gallery
+    path(
+        "gallery/",
+        GalleryListView.as_view(),
+        name="gallery list"
+    ),
+
+    # Appointments
+    path(
+        "appointments/",
+        AppointmentCreateView.as_view(),
+        name="appointment-create"
+    ),
+
+    # Availability
+    path(
+        "availability/",
         AvailabilityView.as_view(),
-        name='availability',
+        name="availability"
     ),
 ]
