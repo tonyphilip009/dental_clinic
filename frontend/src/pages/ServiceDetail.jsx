@@ -69,7 +69,7 @@ export default function ServiceDetail() {
             </p>
 
             <Link
-              to="/contact"
+              to={`/booking?service=${service.id}`}
               className="mt-8 inline-block rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
             >
               Book an Appointment

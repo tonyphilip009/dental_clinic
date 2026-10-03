@@ -9,6 +9,7 @@ import ServiceDetail from "./pages/ServiceDetail";
 import Gallery from "./pages/Gallery";
 import Testimonials from "./pages/Testimonials";
 import Contact from "./pages/Contact";
+import Booking from "./pages/Booking";
 
 import "./App.css";
 
@@ -27,6 +28,9 @@ function App() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/testimonials" element={<Testimonials />} />
         <Route path="/contact" element={<Contact />} />
+
+        {/* Booking page */}
+        <Route path="/booking" element={<Booking />} />
       </Routes>
 
       <Footer />
