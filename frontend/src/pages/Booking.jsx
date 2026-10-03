@@ -1,240 +1,81 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
-import { getErrorMessage, getServices } from "../api";
-
+import { getServices } from "../api";
 import BookingSteps from "../components/BookingSteps";
-import EmptyState from "../components/EmptyState";
-import ErrorMessage from "../components/ErrorMessage";
-import Loading from "../components/Loading";
+import BookingSummary from "../components/BookingSummary";
+import PatientDetailsStep from "../components/PatientDetailsStep";
 import ScheduleStep from "../components/ScheduleStep";
-import ServiceIcon from "../components/ServiceIcon";
-
+import ServiceStep from "../components/ServiceStep";
 import useFetch from "../hooks/useFetch";
 
-import {
-  formatDisplayDate,
-  formatTime,
-} from "../utils/dates";
+const EMPTY_PATIENT = { name: "", phone: "", email: "", message: "" };
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
+  const servicesState = useFetch(getServices);
+  const services = servicesState.data ?? [];
 
-  const {
-    data,
-    loading,
-    error,
-    reload,
-  } = useFetch(getServices);
-
-  const services = data ?? [];
-
-  // Current booking step
   const [step, setStep] = useState(1);
 
-  // Service selected from Step 1
+  // Everything the patient has chosen so far
   const [selectedId, setSelectedId] = useState(
     () => Number(searchParams.get("service")) || null
   );
-
-  // Dentist, date and time selected in Step 2
   const [dentist, setDentist] = useState(null);
   const [date, setDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [patient, setPatient] = useState(EMPTY_PATIENT);
 
-  // Find selected service
-  const selectedService =
-    services.find(
-      (service) => service.id === selectedId
-    ) || null;
+  const selectedService = services.find((s) => s.id === selectedId) || null;
 
-  // Change booking step
   const goToStep = (next) => {
     setStep(next);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // When dentist changes, old time is no longer valid
+  // A time slot only makes sense for one dentist and one date
   const handleDentistChange = (d) => {
     setDentist(d);
     setTimeSlot("");
   };
 
-  // When date changes, old time is no longer valid
   const handleDateChange = (value) => {
     setDate(value);
     setTimeSlot("");
   };
 
+  const handlePatientChange = (field, value) => {
+    setPatient((current) => ({ ...current, [field]: value }));
+  };
+
+  const handlePatientSubmit = (cleaned) => {
+    setPatient(cleaned);
+    goToStep(4);
+  };
+
   return (
     <section className="bg-brand-light/20 py-16">
-
       <div className="mx-auto max-w-5xl px-4">
-
-        {/* Page heading */}
-
         <div className="mb-8 text-center">
-
           <h1 className="text-4xl font-bold text-brand-dark">
             Book an Appointment
           </h1>
-
           <p className="mx-auto mt-3 max-w-2xl text-gray-600">
-            Choose your treatment, pick a time that suits you,
-            and we'll take care of the rest.
+            Choose your treatment, pick a time that suits you, and we'll take
+            care of the rest.
           </p>
-
         </div>
-
-        {/* Booking progress */}
 
         <BookingSteps current={step} />
 
-        {/* ================================================= */}
-        {/* STEP 1 — SELECT SERVICE */}
-        {/* ================================================= */}
-
         {step === 1 && (
-          <>
-            <h2 className="mb-6 text-center text-2xl font-semibold text-brand-dark">
-              What would you like to book?
-            </h2>
-
-            {/* Loading */}
-
-            {loading && (
-              <Loading message="Loading services..." />
-            )}
-
-            {/* Error */}
-
-            {error && (
-              <ErrorMessage
-                message={getErrorMessage(
-                  error,
-                  "We couldn't load our services right now."
-                )}
-                onRetry={reload}
-              />
-            )}
-
-            {/* No services */}
-
-            {!loading &&
-              !error &&
-              services.length === 0 && (
-                <EmptyState
-                  title="Online booking isn't available yet"
-                  message="Please contact the clinic directly to book your appointment."
-                />
-              )}
-
-            {/* Services */}
-
-            {!loading &&
-              !error &&
-              services.length > 0 && (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                    {services.map((service) => {
-
-                      const isSelected =
-                        service.id === selectedId;
-
-                      return (
-                        <button
-                          type="button"
-                          key={service.id}
-                          onClick={() =>
-                            setSelectedId(service.id)
-                          }
-                          aria-pressed={isSelected}
-                          className={`relative rounded-xl bg-white p-5 text-left shadow-md transition ${
-                            isSelected
-                              ? "ring-2 ring-brand"
-                              : "hover:-translate-y-1 hover:shadow-lg"
-                          }`}
-                        >
-
-                          {/* Selected check */}
-
-                          {isSelected && (
-                            <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-white">
-                              ✓
-                            </span>
-                          )}
-
-                          <ServiceIcon
-                            icon={service.icon}
-                            name={service.name}
-                          />
-
-                          <h3 className="mt-3 text-lg font-semibold text-brand-dark">
-                            {service.name}
-                          </h3>
-
-                          <p className="mt-1 line-clamp-2 text-sm text-gray-600">
-                            {service.description}
-                          </p>
-
-                          {service.price && (
-                            <p className="mt-3 text-sm font-semibold text-brand">
-                              Starting from ₹
-                              {Number(
-                                service.price
-                              ).toLocaleString("en-IN")}
-                            </p>
-                          )}
-
-                        </button>
-                      );
-                    })}
-
-                  </div>
-
-                  {/* Selected service + Continue */}
-
-                  <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-xl bg-white p-5 shadow-md sm:flex-row">
-
-                    <p className="text-gray-700">
-
-                      {selectedService ? (
-                        <>
-                          Selected:{" "}
-                          <span className="font-semibold text-brand-dark">
-                            {selectedService.name}
-                          </span>
-                        </>
-                      ) : (
-                        "Please select a service to continue."
-                      )}
-
-                    </p>
-
-                    <button
-                      type="button"
-                      disabled={!selectedService}
-                      onClick={() => goToStep(2)}
-                      className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Continue
-                    </button>
-
-                  </div>
-
-                </>
-              )}
-          </>
+          <ServiceStep
+            servicesState={servicesState}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onContinue={() => goToStep(2)}
+          />
         )}
-
-        {/* ================================================= */}
-        {/* STEP 2 — DENTIST + DATE + TIME */}
-        {/* ================================================= */}
 
         {step === 2 && (
           <ScheduleStep
@@ -250,56 +91,44 @@ export default function Booking() {
           />
         )}
 
-        {/* ================================================= */}
-        {/* STEP 3 — TEMPORARY SUMMARY */}
-        {/* ================================================= */}
-
         {step === 3 && (
-          <div className="rounded-xl bg-white p-8 text-center shadow-md">
-
-            <h2 className="text-2xl font-semibold text-brand-dark">
-              Your appointment so far
-            </h2>
-
-            <ul className="mt-4 space-y-1 text-gray-700">
-
-              <li>
-                Service: {selectedService?.name}
-              </li>
-
-              <li>
-                Dentist: {dentist?.name}
-              </li>
-
-              <li>
-                Date:{" "}
-                {date && formatDisplayDate(date)}
-              </li>
-
-              <li>
-                Time:{" "}
-                {timeSlot && formatTime(timeSlot)}
-              </li>
-
-            </ul>
-
-            <p className="mt-4 text-gray-500">
-              Your personal details come next.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => goToStep(2)}
-              className="mt-6 rounded-lg border border-brand px-5 py-2 font-semibold text-brand transition hover:bg-brand-light/30"
-            >
-              ← Change date or time
-            </button>
-
-          </div>
+          <PatientDetailsStep
+            service={selectedService}
+            dentist={dentist}
+            date={date}
+            timeSlot={timeSlot}
+            patient={patient}
+            onChange={handlePatientChange}
+            onBack={() => goToStep(2)}
+            onSubmit={handlePatientSubmit}
+          />
         )}
 
+        {/* ---------- Step 4: placeholder until Day 29 ---------- */}
+        {step === 4 && (
+          <div className="mx-auto max-w-xl space-y-6">
+            <BookingSummary
+              service={selectedService}
+              dentist={dentist}
+              date={date}
+              timeSlot={timeSlot}
+              patient={patient}
+            />
+            <div className="rounded-xl bg-white p-6 text-center shadow-md">
+              <p className="text-gray-500">
+                Identity verification comes next.
+              </p>
+              <button
+                type="button"
+                onClick={() => goToStep(3)}
+                className="mt-4 rounded-lg border border-brand px-5 py-2 font-semibold text-brand transition hover:bg-brand-light/30"
+              >
+                ← Edit my details
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
     </section>
   );
 }
