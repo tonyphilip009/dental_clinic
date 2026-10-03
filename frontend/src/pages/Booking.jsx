@@ -1,39 +1,70 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+
 import { getServices } from "../api";
+
 import BookingSteps from "../components/BookingSteps";
 import BookingSummary from "../components/BookingSummary";
 import PatientDetailsStep from "../components/PatientDetailsStep";
 import ScheduleStep from "../components/ScheduleStep";
 import ServiceStep from "../components/ServiceStep";
+
 import useFetch from "../hooks/useFetch";
 
-const EMPTY_PATIENT = { name: "", phone: "", email: "", message: "" };
+import { validateBookingChoices } from "../utils/validation";
+
+const EMPTY_PATIENT = {
+  name: "",
+  phone: "",
+  email: "",
+  message: "",
+};
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
+
   const servicesState = useFetch(getServices);
+
   const services = servicesState.data ?? [];
 
   const [step, setStep] = useState(1);
 
-  // Everything the patient has chosen so far
+  const [notice, setNotice] = useState("");
+
   const [selectedId, setSelectedId] = useState(
-    () => Number(searchParams.get("service")) || null
+    () =>
+      Number(searchParams.get("service")) || null
   );
+
   const [dentist, setDentist] = useState(null);
+
   const [date, setDate] = useState("");
+
   const [timeSlot, setTimeSlot] = useState("");
-  const [patient, setPatient] = useState(EMPTY_PATIENT);
 
-  const selectedService = services.find((s) => s.id === selectedId) || null;
+  const [patient, setPatient] = useState(
+    EMPTY_PATIENT
+  );
 
-  const goToStep = (next) => {
+  const [countryCode, setCountryCode] =
+    useState("GB");
+
+  const selectedService =
+    services.find(
+      (s) => s.id === selectedId
+    ) || null;
+
+  const goToStep = (next, message = "") => {
+    setNotice(message);
+
     setStep(next);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  // A time slot only makes sense for one dentist and one date
   const handleDentistChange = (d) => {
     setDentist(d);
     setTimeSlot("");
@@ -44,12 +75,46 @@ export default function Booking() {
     setTimeSlot("");
   };
 
-  const handlePatientChange = (field, value) => {
-    setPatient((current) => ({ ...current, [field]: value }));
+  const handlePatientChange = (
+    field,
+    value
+  ) => {
+    setPatient((current) => ({
+      ...current,
+      [field]: value,
+    }));
   };
 
   const handlePatientSubmit = (cleaned) => {
-    setPatient(cleaned);
+    setPatient({
+      name: cleaned.name,
+      phone: cleaned.phone,
+      email: cleaned.email,
+      message: cleaned.message,
+    });
+
+    if (cleaned.countryCode) {
+      setCountryCode(
+        cleaned.countryCode
+      );
+    }
+
+    const problem =
+      validateBookingChoices({
+        service: selectedService,
+        dentist,
+        date,
+        timeSlot,
+      });
+
+    if (problem) {
+      goToStep(
+        problem.step,
+        problem.message
+      );
+      return;
+    }
+
     goToStep(4);
   };
 
@@ -60,6 +125,7 @@ export default function Booking() {
           <h1 className="text-4xl font-bold text-brand-dark">
             Book an Appointment
           </h1>
+
           <p className="mx-auto mt-3 max-w-2xl text-gray-600">
             Choose your treatment, pick a time that suits you, and we'll take
             care of the rest.
@@ -68,12 +134,23 @@ export default function Booking() {
 
         <BookingSteps current={step} />
 
+        {notice && (
+          <p
+            className="mb-6 rounded-lg bg-red-50 p-3 text-center text-red-700"
+            role="alert"
+          >
+            {notice}
+          </p>
+        )}
+
         {step === 1 && (
           <ServiceStep
             servicesState={servicesState}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onContinue={() => goToStep(2)}
+            onContinue={() =>
+              goToStep(2)
+            }
           />
         )}
 
@@ -83,11 +160,19 @@ export default function Booking() {
             dentist={dentist}
             date={date}
             timeSlot={timeSlot}
-            onDentistChange={handleDentistChange}
-            onDateChange={handleDateChange}
+            onDentistChange={
+              handleDentistChange
+            }
+            onDateChange={
+              handleDateChange
+            }
             onTimeChange={setTimeSlot}
-            onBack={() => goToStep(1)}
-            onContinue={() => goToStep(3)}
+            onBack={() =>
+              goToStep(1)
+            }
+            onContinue={() =>
+              goToStep(3)
+            }
           />
         )}
 
@@ -98,13 +183,22 @@ export default function Booking() {
             date={date}
             timeSlot={timeSlot}
             patient={patient}
-            onChange={handlePatientChange}
-            onBack={() => goToStep(2)}
-            onSubmit={handlePatientSubmit}
+            countryCode={countryCode}
+            onCountryChange={
+              setCountryCode
+            }
+            onChange={
+              handlePatientChange
+            }
+            onBack={() =>
+              goToStep(2)
+            }
+            onSubmit={
+              handlePatientSubmit
+            }
           />
         )}
 
-        {/* ---------- Step 4: placeholder until Day 29 ---------- */}
         {step === 4 && (
           <div className="mx-auto max-w-xl space-y-6">
             <BookingSummary
@@ -114,13 +208,17 @@ export default function Booking() {
               timeSlot={timeSlot}
               patient={patient}
             />
+
             <div className="rounded-xl bg-white p-6 text-center shadow-md">
               <p className="text-gray-500">
                 Identity verification comes next.
               </p>
+
               <button
                 type="button"
-                onClick={() => goToStep(3)}
+                onClick={() =>
+                  goToStep(3)
+                }
                 className="mt-4 rounded-lg border border-brand px-5 py-2 font-semibold text-brand transition hover:bg-brand-light/30"
               >
                 ← Edit my details

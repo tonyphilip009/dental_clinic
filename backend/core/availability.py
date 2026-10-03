@@ -5,6 +5,9 @@ from django.utils import timezone
 from .models import Appointment, DentistAvailability, DentistTimeOff
 
 
+BOOKING_WINDOW_DAYS = 60
+
+
 def get_available_slots(dentist, date):
 
     # 1. Check if dentist has time off on this date

@@ -1,9 +1,51 @@
+import { useState } from "react";
+
 import BookingSummary from "./BookingSummary";
+
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY,
+  getCountryInfo,
+  validateEmail,
+  validateMessage,
+  validateName,
+  validatePatient,
+  validatePhone,
+  normalizePhone,
+} from "../utils/validation";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
 
-const MESSAGE_LIMIT = 500;
+const errorInputClass =
+  "border-red-500 focus:border-red-500 focus:ring-red-200";
+
+const VALIDATORS = {
+  name: validateName,
+  email: validateEmail,
+  message: validateMessage,
+};
+
+const FIELD_ORDER = [
+  "name",
+  "phone",
+  "email",
+  "message",
+];
+
+function FieldError({ message, id }) {
+  if (!message) return null;
+
+  return (
+    <p
+      id={id}
+      className="mt-1 text-sm text-red-600"
+      role="alert"
+    >
+      {message}
+    </p>
+  );
+}
 
 export default function PatientDetailsStep({
   service,
@@ -11,23 +53,184 @@ export default function PatientDetailsStep({
   date,
   timeSlot,
   patient,
+  countryCode = DEFAULT_COUNTRY,
+  onCountryChange,
   onChange,
   onBack,
   onSubmit,
 }) {
+  const [errors, setErrors] =
+    useState({});
+
+  const [touched, setTouched] =
+    useState({});
+
+  const country =
+    getCountryInfo(countryCode);
+
+  const handleCountryChange = (
+    value
+  ) => {
+    onCountryChange(value);
+
+    setErrors((current) => ({
+      ...current,
+      phone: "",
+    }));
+
+    setTouched((current) => ({
+      ...current,
+      phone: false,
+    }));
+  };
+
+  const handleChange = (
+    field,
+    value
+  ) => {
+    onChange(field, value);
+
+    if (touched[field]) {
+      if (field === "phone") {
+        setErrors((current) => ({
+          ...current,
+          phone: validatePhone(
+            value,
+            countryCode
+          ),
+        }));
+
+        return;
+      }
+
+      const validator =
+        VALIDATORS[field];
+
+      if (validator) {
+        const error =
+          validator(value);
+
+        setErrors((current) => ({
+          ...current,
+          [field]: error,
+        }));
+      }
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((current) => ({
+      ...current,
+      [field]: true,
+    }));
+
+    if (field === "phone") {
+      setErrors((current) => ({
+        ...current,
+        phone: validatePhone(
+          patient.phone,
+          countryCode
+        ),
+      }));
+
+      return;
+    }
+
+    const validator =
+      VALIDATORS[field];
+
+    if (validator) {
+      setErrors((current) => ({
+        ...current,
+        [field]: validator(
+          patient[field]
+        ),
+      }));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
-      name: patient.name.trim(),
-      phone: patient.phone.trim(),
-      email: patient.email.trim(),
-      message: patient.message.trim(),
+
+    const validationErrors =
+      validatePatient(
+        patient,
+        countryCode
+      );
+
+    setTouched({
+      name: true,
+      phone: true,
+      email: true,
+      message: true,
     });
+
+    setErrors(validationErrors);
+
+    const hasErrors =
+      FIELD_ORDER.some(
+        (field) =>
+          validationErrors[field]
+      );
+
+    if (hasErrors) {
+      return;
+    }
+
+    const normalizedPhone =
+      normalizePhone(
+        patient.phone,
+        countryCode
+      );
+
+    if (!normalizedPhone) {
+      setErrors((current) => ({
+        ...current,
+        phone: validatePhone(
+          patient.phone,
+          countryCode
+        ),
+      }));
+
+      return;
+    }
+
+    onSubmit({
+      name: patient.name
+        .trim()
+        .replace(/\s+/g, " "),
+
+      phone: normalizedPhone,
+
+      email: patient.email
+        .trim()
+        .toLowerCase(),
+
+      message:
+        patient.message.trim(),
+
+      countryCode,
+    });
+  };
+
+  const fieldProps = (field) => {
+    const hasError =
+      touched[field] &&
+      errors[field];
+
+    return {
+      "aria-invalid":
+        Boolean(hasError),
+
+      "aria-describedby":
+        hasError
+          ? `${field}-error`
+          : undefined,
+    };
   };
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
-      {/* On phones the summary appears first, on desktop it sits on the right */}
       <div className="lg:order-2">
         <div className="lg:sticky lg:top-6">
           <BookingSummary
@@ -41,75 +244,178 @@ export default function PatientDetailsStep({
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="space-y-5 rounded-xl bg-white p-6 shadow-md lg:order-1 lg:col-span-2"
       >
-        <div>
-          <h2 className="text-2xl font-semibold text-brand-dark">
-            Your details
-          </h2>
-          <p className="mt-1 text-gray-600">
-            We'll use these details to confirm your appointment.
-          </p>
-        </div>
-
         <div>
           <label
             htmlFor="patient-name"
             className="mb-1 block font-medium text-gray-700"
           >
-            Full name <span className="text-red-600">*</span>
+            Full Name
           </label>
+
           <input
             id="patient-name"
             type="text"
-            required
-            autoComplete="name"
-            placeholder="e.g. Priya Nair"
             value={patient.name}
-            onChange={(e) => onChange("name", e.target.value)}
-            className={inputClass}
+            onChange={(e) =>
+              handleChange(
+                "name",
+                e.target.value
+              )
+            }
+            onBlur={() =>
+              handleBlur("name")
+            }
+            className={`${inputClass} ${
+              touched.name &&
+              errors.name
+                ? errorInputClass
+                : ""
+            }`}
+            placeholder="Enter your full name"
+            {...fieldProps("name")}
+          />
+
+          <FieldError
+            id="name-error"
+            message={errors.name}
           />
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="patient-phone"
-              className="mb-1 block font-medium text-gray-700"
-            >
-              Phone number <span className="text-red-600">*</span>
-            </label>
+        <div>
+          <label
+            htmlFor="patient-country"
+            className="mb-1 block font-medium text-gray-700"
+          >
+            Country
+          </label>
+
+          <select
+            id="patient-country"
+            value={countryCode}
+            onChange={(e) =>
+              handleCountryChange(
+                e.target.value
+              )
+            }
+            className={inputClass}
+          >
+            {COUNTRIES.map(
+              (item) => {
+                const info =
+                  getCountryInfo(
+                    item.code
+                  );
+
+                return (
+                  <option
+                    key={item.code}
+                    value={item.code}
+                  >
+                    {info.flag}{" "}
+                    {item.name}{" "}
+                    (+{info.callingCode})
+                  </option>
+                );
+              }
+            )}
+          </select>
+        </div>
+
+        <div>
+          <label
+            htmlFor="patient-phone"
+            className="mb-1 block font-medium text-gray-700"
+          >
+            Phone Number
+          </label>
+
+          <div className="flex gap-2">
+            <div className="flex min-w-[90px] items-center justify-center rounded-lg border border-gray-300 bg-gray-50 px-3 text-gray-700">
+              <span className="mr-1">
+                {country?.flag}
+              </span>
+
+              <span>
+                +{country?.callingCode}
+              </span>
+            </div>
+
             <input
               id="patient-phone"
               type="tel"
-              inputMode="tel"
-              required
-              autoComplete="tel"
-              placeholder="e.g. 98765 43210"
               value={patient.phone}
-              onChange={(e) => onChange("phone", e.target.value)}
-              className={inputClass}
+              onChange={(e) =>
+                handleChange(
+                  "phone",
+                  e.target.value
+                )
+              }
+              onBlur={() =>
+                handleBlur("phone")
+              }
+              className={`flex-1 ${inputClass} ${
+                touched.phone &&
+                errors.phone
+                  ? errorInputClass
+                  : ""
+              }`}
+              placeholder={
+                country?.example ||
+                "Enter your phone number"
+              }
+              {...fieldProps("phone")}
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="patient-email"
-              className="mb-1 block font-medium text-gray-700"
-            >
-              Email address <span className="text-red-600">*</span>
-            </label>
-            <input
-              id="patient-email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="e.g. priya@example.com"
-              value={patient.email}
-              onChange={(e) => onChange("email", e.target.value)}
-              className={inputClass}
-            />
-          </div>
+          <p className="mt-1 text-sm text-gray-500">
+            Example:{" "}
+            {country?.example}
+          </p>
+
+          <FieldError
+            id="phone-error"
+            message={errors.phone}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="patient-email"
+            className="mb-1 block font-medium text-gray-700"
+          >
+            Email Address
+          </label>
+
+          <input
+            id="patient-email"
+            type="email"
+            value={patient.email}
+            onChange={(e) =>
+              handleChange(
+                "email",
+                e.target.value
+              )
+            }
+            onBlur={() =>
+              handleBlur("email")
+            }
+            className={`${inputClass} ${
+              touched.email &&
+              errors.email
+                ? errorInputClass
+                : ""
+            }`}
+            placeholder="you@example.com"
+            {...fieldProps("email")}
+          />
+
+          <FieldError
+            id="email-error"
+            message={errors.email}
+          />
         </div>
 
         <div>
@@ -117,35 +423,66 @@ export default function PatientDetailsStep({
             htmlFor="patient-message"
             className="mb-1 block font-medium text-gray-700"
           >
-            Message <span className="text-gray-500">(optional)</span>
+            Message
+
+            <span className="ml-1 text-sm font-normal text-gray-500">
+              (optional)
+            </span>
           </label>
+
           <textarea
             id="patient-message"
-            rows={4}
-            maxLength={MESSAGE_LIMIT}
-            placeholder="Anything the dentist should know before your visit?"
+            rows="4"
             value={patient.message}
-            onChange={(e) => onChange("message", e.target.value)}
-            className={inputClass}
+            onChange={(e) =>
+              handleChange(
+                "message",
+                e.target.value
+              )
+            }
+            onBlur={() =>
+              handleBlur("message")
+            }
+            className={`${inputClass} ${
+              touched.message &&
+              errors.message
+                ? errorInputClass
+                : ""
+            }`}
+            placeholder="Anything you'd like us to know?"
+            {...fieldProps("message")}
           />
-          <p className="mt-1 text-right text-xs text-gray-500">
-            {patient.message.length}/{MESSAGE_LIMIT}
-          </p>
+
+          <div className="mt-1 flex justify-between text-sm text-gray-500">
+            <span>
+              Maximum 500 characters
+            </span>
+
+            <span>
+              {patient.message.length}/500
+            </span>
+          </div>
+
+          <FieldError
+            id="message-error"
+            message={errors.message}
+          />
         </div>
 
-        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-between">
+        <div className="flex justify-between gap-4 pt-2">
           <button
             type="button"
             onClick={onBack}
-            className="rounded-lg border border-brand px-5 py-3 font-semibold text-brand transition hover:bg-brand-light/30"
+            className="rounded-lg border border-gray-300 px-5 py-2 font-semibold text-gray-700 transition hover:bg-gray-50"
           >
-            ← Change date or time
+            ← Back
           </button>
+
           <button
             type="submit"
-            className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
+            className="rounded-lg bg-brand px-6 py-2 font-semibold text-white transition hover:opacity-90"
           >
-            Continue
+            Continue →
           </button>
         </div>
       </form>

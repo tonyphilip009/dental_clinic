@@ -1,12 +1,15 @@
 import { useState } from "react";
+
 import {
   getAvailability,
   getDentists,
   getErrorMessage,
 } from "../api";
+
 import useFetch from "../hooks/useFetch";
 
 import {
+  BOOKING_WINDOW_DAYS,
   addDays,
   formatDisplayDate,
   formatTime,
@@ -18,7 +21,6 @@ import EmptyState from "./EmptyState";
 import ErrorMessage from "./ErrorMessage";
 import Loading from "./Loading";
 
-const BOOKING_WINDOW_DAYS = 60;
 
 export default function ScheduleStep({
   service,

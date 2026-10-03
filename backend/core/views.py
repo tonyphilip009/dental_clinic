@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -18,7 +18,7 @@ from .serializers import (
     AppointmentSerializer,
 )
 
-from .availability import get_available_slots
+from .availability import BOOKING_WINDOW_DAYS, get_available_slots
 
 
 class ServiceListView(generics.ListAPIView):
@@ -74,7 +74,10 @@ class AvailabilityView(APIView):
         if not dentist_id or not date_str:
             return Response(
                 {
-                    "error": "Both 'dentist' and 'date' query parameters are required."
+                    "error": (
+                        "Both 'dentist' and 'date' query parameters "
+                        "are required."
+                    )
                 },
                 status=400
             )
@@ -111,6 +114,18 @@ class AvailabilityView(APIView):
             return Response(
                 {
                     "error": "Date cannot be in the past."
+                },
+                status=400
+            )
+
+        # Don't allow dates more than 60 days ahead
+        if date > timezone.localdate() + timedelta(days=BOOKING_WINDOW_DAYS):
+            return Response(
+                {
+                    "error": (
+                        f"Date cannot be more than "
+                        f"{BOOKING_WINDOW_DAYS} days ahead."
+                    )
                 },
                 status=400
             )

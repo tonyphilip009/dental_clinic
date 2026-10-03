@@ -1,3 +1,6 @@
+export const BOOKING_WINDOW_DAYS = 60;
+
+
 // Returns "YYYY-MM-DD" using the local calendar date
 export function toInputDate(date) {
   const year = date.getFullYear();
@@ -7,12 +10,14 @@ export function toInputDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+
 export function addDays(date, days) {
   const copy = new Date(date);
   copy.setDate(copy.getDate() + days);
 
   return copy;
 }
+
 
 // "2026-10-05" -> "Monday, 5 October 2026"
 export function formatDisplayDate(value) {
@@ -25,6 +30,7 @@ export function formatDisplayDate(value) {
     year: "numeric",
   });
 }
+
 
 // "14:30" -> "2:30 PM"
 export function formatTime(value) {
