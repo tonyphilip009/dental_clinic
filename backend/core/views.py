@@ -34,6 +34,7 @@ from .availability import (
 
 from .otp import (
     OTPError,
+    consume_verification,
     send_otp,
     verify_otp,
 )
@@ -69,9 +70,25 @@ class AppointmentCreateView(generics.CreateAPIView):
     serializer_class = AppointmentSerializer
 
     def perform_create(self, serializer):
+        data = serializer.validated_data
+
         try:
+            # One transaction:
+            # If anything fails, the token is NOT used up.
             with transaction.atomic():
+                consume_verification(
+                    data["email"],
+                    data["verification_token"],
+                )
+
                 serializer.save()
+
+        except OTPError as error:
+            raise serializers.ValidationError(
+                {
+                    "verification_token": error.payload["error"]
+                }
+            )
 
         except IntegrityError:
             raise serializers.ValidationError(

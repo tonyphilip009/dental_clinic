@@ -14,6 +14,7 @@ from .models import EmailOTP
 
 OTP_LENGTH = 6
 OTP_LIFETIME = timedelta(minutes=5)
+VERIFICATION_LIFETIME = timedelta(minutes=15)
 RESEND_COOLDOWN = timedelta(seconds=60)
 MAX_ATTEMPTS = 5
 MAX_SENDS_PER_HOUR = 5
@@ -58,7 +59,7 @@ def send_otp(email):
     # 2. Hourly limit per email address
     sent_last_hour = EmailOTP.objects.filter(
         email=email,
-        created_at__gte=now - timedelta(hours=1)
+        created_at__gte=now - timedelta(hours=1),
     ).count()
 
     if sent_last_hour >= MAX_SENDS_PER_HOUR:
@@ -172,3 +173,33 @@ def verify_otp(email, code):
     )
 
     return token
+
+
+def _verification_queryset(email, token):
+    return EmailOTP.objects.filter(
+        email=email,
+        token_hash=_hash(token, "token"),
+        verified_at__isnull=False,
+        consumed_at__isnull=True,
+        verified_at__gte=timezone.now() - VERIFICATION_LIFETIME,
+    )
+
+
+def has_valid_verification(email, token):
+    """True if this token proves a recent, unused verification for this email."""
+    return bool(token) and _verification_queryset(email, token).exists()
+
+
+def consume_verification(email, token):
+    """Mark a verification as used. Call this inside transaction.atomic()."""
+    otp = _verification_queryset(email, token).select_for_update().first()
+
+    if otp is None:
+        raise OTPError(
+            "Your email verification has expired or was already used. "
+            "Please verify your email again.",
+            code="verification_invalid",
+        )
+
+    otp.consumed_at = timezone.now()
+    otp.save(update_fields=["consumed_at"])

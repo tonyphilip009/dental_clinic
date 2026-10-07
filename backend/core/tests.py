@@ -1,4 +1,5 @@
 import re
+import secrets
 from datetime import time, timedelta
 
 from django.core import mail
@@ -15,6 +16,8 @@ from .models import (
     Service,
     EmailOTP,
 )
+
+from .otp import _hash
 
 
 # Change this if your appointment endpoint path is different
@@ -66,6 +69,26 @@ class BackendAPITests(TestCase):
             slot_duration=30,
         )
 
+    # ---------- Day 30: verified token helper ----------
+
+    def verified_token(
+        self,
+        email="test@example.com",
+        verified_ago=timedelta(0),
+    ):
+        """Create a verified OTP row directly and return its raw token."""
+        token = secrets.token_urlsafe(32)
+
+        EmailOTP.objects.create(
+            email=email,
+            code_hash="0" * 64,
+            expires_at=timezone.now() + timedelta(minutes=5),
+            verified_at=timezone.now() - verified_ago,
+            token_hash=_hash(token, "token"),
+        )
+
+        return token
+
     def booking_payload(self, **overrides):
         payload = {
             "name": "Test Patient",
@@ -82,6 +105,13 @@ class BackendAPITests(TestCase):
         }
 
         payload.update(overrides)
+
+        # Unless a test supplies its own token,
+        # give it a valid verified token.
+        if "verification_token" not in payload:
+            payload["verification_token"] = self.verified_token(
+                str(payload["email"]).strip().lower()
+            )
 
         return payload
 
@@ -278,7 +308,7 @@ class BackendAPITests(TestCase):
         )
 
         self.assertIn(
-            "non_field_errors",
+            "time_slot",
             r.json(),
         )
 
@@ -731,6 +761,340 @@ class BackendAPITests(TestCase):
         self.assertIn(
             "dentist",
             r.json(),
+        )
+
+    # ---------- Day 30: appointments require a verified email ----------
+
+    def test_booking_without_token_rejected(self):
+        payload = self.booking_payload()
+
+        payload.pop("verification_token")
+
+        r = self.client.post(
+            APPOINTMENT_URL,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "verification_token",
+            r.json(),
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            0,
+        )
+
+    def test_booking_with_made_up_token_rejected(self):
+        r = self.post_booking(
+            verification_token="not-a-real-token"
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "verification_token",
+            r.json(),
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            0,
+        )
+
+    def test_token_for_another_email_rejected(self):
+        token = self.verified_token(
+            "someone.else@example.com"
+        )
+
+        r = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "verification_token",
+            r.json(),
+        )
+
+    def test_expired_verification_rejected(self):
+        token = self.verified_token(
+            verified_ago=timedelta(minutes=20)
+        )
+
+        r = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "verification_token",
+            r.json(),
+        )
+
+    def test_successful_booking_uses_up_the_token(self):
+        token = self.verified_token()
+
+        r = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            r.status_code,
+            201,
+            r.content,
+        )
+
+        otp = EmailOTP.objects.get(
+            token_hash=_hash(token, "token")
+        )
+
+        self.assertIsNotNone(
+            otp.consumed_at
+        )
+
+    def test_token_cannot_be_used_twice(self):
+        token = self.verified_token()
+
+        first = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            first.status_code,
+            201,
+            first.content,
+        )
+
+        second = self.post_booking(
+            verification_token=token,
+            time_slot="10:00",
+        )
+
+        self.assertEqual(
+            second.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "verification_token",
+            second.json(),
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            1,
+        )
+
+    def test_invalid_slot_does_not_use_up_the_token(self):
+        token = self.verified_token()
+
+        bad = self.post_booking(
+            verification_token=token,
+            time_slot="03:00",
+        )
+
+        self.assertEqual(
+            bad.status_code,
+            400,
+        )
+
+        good = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            good.status_code,
+            201,
+            good.content,
+        )
+
+    def test_duplicate_booking_does_not_use_up_the_token(self):
+        self.assertEqual(
+            self.post_booking().status_code,
+            201,
+        )
+
+        token = self.verified_token()
+
+        r = self.post_booking(
+            verification_token=token
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "time_slot",
+            r.json(),
+        )
+
+        otp = EmailOTP.objects.get(
+            token_hash=_hash(token, "token")
+        )
+
+        self.assertIsNone(
+            otp.consumed_at
+        )
+
+    def test_full_flow_wrong_otp_then_correct(self):
+        cache.clear()
+
+        email = "flow@example.com"
+
+        self.client.post(
+            "/api/otp/send/",
+            {
+                "email": email
+            },
+            format="json",
+        )
+
+        code = re.search(
+            r"\b(\d{6})\b",
+            mail.outbox[-1].body,
+        ).group(1)
+
+        wrong = (
+            "000000"
+            if code != "000000"
+            else "111111"
+        )
+
+        r = self.client.post(
+            "/api/otp/verify/",
+            {
+                "email": email,
+                "code": wrong,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        # No valid token yet, so booking is refused
+        r = self.post_booking(
+            email=email,
+            verification_token="guess",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            0,
+        )
+
+        r = self.client.post(
+            "/api/otp/verify/",
+            {
+                "email": email,
+                "code": code,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            200,
+        )
+
+        r = self.post_booking(
+            email=email,
+            verification_token=r.json()["token"],
+        )
+
+        self.assertEqual(
+            r.status_code,
+            201,
+            r.content,
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            1,
+        )
+
+    def test_full_flow_expired_otp_cannot_book(self):
+        cache.clear()
+
+        email = "late@example.com"
+
+        self.client.post(
+            "/api/otp/send/",
+            {
+                "email": email
+            },
+            format="json",
+        )
+
+        code = re.search(
+            r"\b(\d{6})\b",
+            mail.outbox[-1].body,
+        ).group(1)
+
+        EmailOTP.objects.update(
+            expires_at=timezone.now()
+            - timedelta(seconds=1)
+        )
+
+        r = self.client.post(
+            "/api/otp/verify/",
+            {
+                "email": email,
+                "code": code,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "expired",
+        )
+
+        r = self.post_booking(
+            email=email,
+            verification_token="guess",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            0,
         )
 
 

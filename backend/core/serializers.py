@@ -17,6 +17,7 @@ from .models import (
     Gallery,
     Appointment,
 )
+from .otp import has_valid_verification
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -47,15 +48,22 @@ NAME_PATTERN = re.compile(
     r"^[^\W\d_]+(?:[ .'’\-]+[^\W\d_]+)*\.?$"
 )
 
-
 MESSAGE_LIMIT = 500
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
 
+    verification_token = serializers.CharField(
+        write_only=True,
+        error_messages={
+            "required": "Please verify your email before booking.",
+            "blank": "Please verify your email before booking.",
+            "null": "Please verify your email before booking.",
+        },
+    )
+
     class Meta:
         model = Appointment
-
         fields = [
             "id",
             "name",
@@ -66,16 +74,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "date",
             "time_slot",
             "message",
+            "verification_token",
             "status",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "status",
             "created_at",
         ]
-
+        validators = []
         extra_kwargs = {
             "message": {
                 "required": False,
@@ -117,7 +125,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
                 value,
                 None,
             )
-
         except phonenumbers.NumberParseException:
             raise serializers.ValidationError(
                 "Enter a valid international phone number "
@@ -131,8 +138,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
         region = phonenumbers.region_code_for_number(phone)
 
-        # India:
-        # Only accept valid Indian mobile numbers.
         if region == "IN":
             number_type = phonenumbers.number_type(phone)
 
@@ -182,6 +187,19 @@ class AppointmentSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        if not has_valid_verification(
+            attrs["email"],
+            attrs["verification_token"],
+        ):
+            raise serializers.ValidationError(
+                {
+                    "verification_token": (
+                        "Your email verification is missing or "
+                        "has expired. Please verify your email again."
+                    )
+                }
+            )
+
         dentist = attrs.get("dentist")
         date = attrs.get("date")
         time_slot = attrs.get("time_slot")
@@ -206,6 +224,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def create(self, validated_data):
+        validated_data.pop("verification_token", None)
+        return super().create(validated_data)
+
 
 # ============================================================
 # Day 29 - Email OTP Serializers
@@ -220,6 +242,7 @@ class OTPSendSerializer(serializers.Serializer):
 
 class OTPVerifySerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
+
     code = serializers.RegexField(
         r"^\d{6}$",
         error_messages={
