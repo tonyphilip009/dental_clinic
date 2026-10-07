@@ -126,13 +126,19 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Development: emails are printed in the terminal running runserver
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "House of Dental <no-reply@houseofdental.example>"
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_RATES": {
+        "otp_send": "20/hour",
+        "otp_verify": "60/hour",
     },
 }
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

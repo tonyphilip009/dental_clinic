@@ -83,7 +83,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
             },
         }
 
-
     def validate_name(self, value):
         value = " ".join(value.split())
 
@@ -104,7 +103,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
             )
 
         return value
-
 
     def validate_phone(self, value):
         value = value.strip()
@@ -148,10 +146,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             phonenumbers.PhoneNumberFormat.E164,
         )
 
-
     def validate_email(self, value):
         return value.strip().lower()
-
 
     def validate_message(self, value):
         value = value.strip()
@@ -163,7 +159,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
             )
 
         return value
-
 
     def validate_date(self, value):
         if value is None:
@@ -185,7 +180,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
             )
 
         return value
-
 
     def validate(self, attrs):
         dentist = attrs.get("dentist")
@@ -211,3 +205,27 @@ class AppointmentSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+# ============================================================
+# Day 29 - Email OTP Serializers
+# ============================================================
+
+class OTPSendSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class OTPVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+    code = serializers.RegexField(
+        r"^\d{6}$",
+        error_messages={
+            "invalid": "Enter the 6-digit code from your email."
+        },
+    )
+
+    def validate_email(self, value):
+        return value.strip().lower()

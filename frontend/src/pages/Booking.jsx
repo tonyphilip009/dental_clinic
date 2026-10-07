@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
 import { getServices } from "../api";
-
 import BookingSteps from "../components/BookingSteps";
-import BookingSummary from "../components/BookingSummary";
+import OtpStep from "../components/OtpStep";
 import PatientDetailsStep from "../components/PatientDetailsStep";
 import ScheduleStep from "../components/ScheduleStep";
 import ServiceStep from "../components/ServiceStep";
-
 import useFetch from "../hooks/useFetch";
-
+import { DEFAULT_COUNTRY } from "../utils/validation";
 import { validateBookingChoices } from "../utils/validation";
 
 const EMPTY_PATIENT = {
@@ -24,39 +21,33 @@ export default function Booking() {
   const [searchParams] = useSearchParams();
 
   const servicesState = useFetch(getServices);
-
   const services = servicesState.data ?? [];
 
   const [step, setStep] = useState(1);
-
   const [notice, setNotice] = useState("");
 
   const [selectedId, setSelectedId] = useState(
-    () =>
-      Number(searchParams.get("service")) || null
+    () => Number(searchParams.get("service")) || null
   );
 
   const [dentist, setDentist] = useState(null);
-
   const [date, setDate] = useState("");
-
   const [timeSlot, setTimeSlot] = useState("");
 
-  const [patient, setPatient] = useState(
-    EMPTY_PATIENT
-  );
+  const [patient, setPatient] = useState(EMPTY_PATIENT);
 
+  // Selected country for the patient's phone number
   const [countryCode, setCountryCode] =
-    useState("GB");
+    useState(DEFAULT_COUNTRY);
+
+  // { email, token } after successful OTP verification
+  const [verification, setVerification] = useState(null);
 
   const selectedService =
-    services.find(
-      (s) => s.id === selectedId
-    ) || null;
+    services.find((s) => s.id === selectedId) || null;
 
   const goToStep = (next, message = "") => {
     setNotice(message);
-
     setStep(next);
 
     window.scrollTo({
@@ -75,10 +66,7 @@ export default function Booking() {
     setTimeSlot("");
   };
 
-  const handlePatientChange = (
-    field,
-    value
-  ) => {
+  const handlePatientChange = (field, value) => {
     setPatient((current) => ({
       ...current,
       [field]: value,
@@ -86,26 +74,14 @@ export default function Booking() {
   };
 
   const handlePatientSubmit = (cleaned) => {
-    setPatient({
-      name: cleaned.name,
-      phone: cleaned.phone,
-      email: cleaned.email,
-      message: cleaned.message,
+    setPatient(cleaned);
+
+    const problem = validateBookingChoices({
+      service: selectedService,
+      dentist,
+      date,
+      timeSlot,
     });
-
-    if (cleaned.countryCode) {
-      setCountryCode(
-        cleaned.countryCode
-      );
-    }
-
-    const problem =
-      validateBookingChoices({
-        service: selectedService,
-        dentist,
-        date,
-        timeSlot,
-      });
 
     if (problem) {
       goToStep(
@@ -113,6 +89,15 @@ export default function Booking() {
         problem.message
       );
       return;
+    }
+
+    // If the patient changed their email,
+    // the previous verification is no longer valid.
+    if (
+      verification &&
+      verification.email !== cleaned.email
+    ) {
+      setVerification(null);
     }
 
     goToStep(4);
@@ -127,8 +112,8 @@ export default function Booking() {
           </h1>
 
           <p className="mx-auto mt-3 max-w-2xl text-gray-600">
-            Choose your treatment, pick a time that suits you, and we'll take
-            care of the rest.
+            Choose your treatment, pick a time that suits you,
+            and we'll take care of the rest.
           </p>
         </div>
 
@@ -148,9 +133,7 @@ export default function Booking() {
             servicesState={servicesState}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onContinue={() =>
-              goToStep(2)
-            }
+            onContinue={() => goToStep(2)}
           />
         )}
 
@@ -160,19 +143,11 @@ export default function Booking() {
             dentist={dentist}
             date={date}
             timeSlot={timeSlot}
-            onDentistChange={
-              handleDentistChange
-            }
-            onDateChange={
-              handleDateChange
-            }
+            onDentistChange={handleDentistChange}
+            onDateChange={handleDateChange}
             onTimeChange={setTimeSlot}
-            onBack={() =>
-              goToStep(1)
-            }
-            onContinue={() =>
-              goToStep(3)
-            }
+            onBack={() => goToStep(1)}
+            onContinue={() => goToStep(3)}
           />
         )}
 
@@ -184,47 +159,24 @@ export default function Booking() {
             timeSlot={timeSlot}
             patient={patient}
             countryCode={countryCode}
-            onCountryChange={
-              setCountryCode
-            }
-            onChange={
-              handlePatientChange
-            }
-            onBack={() =>
-              goToStep(2)
-            }
-            onSubmit={
-              handlePatientSubmit
-            }
+            onCountryChange={setCountryCode}
+            onChange={handlePatientChange}
+            onBack={() => goToStep(2)}
+            onSubmit={handlePatientSubmit}
           />
         )}
 
         {step === 4 && (
-          <div className="mx-auto max-w-xl space-y-6">
-            <BookingSummary
-              service={selectedService}
-              dentist={dentist}
-              date={date}
-              timeSlot={timeSlot}
-              patient={patient}
-            />
-
-            <div className="rounded-xl bg-white p-6 text-center shadow-md">
-              <p className="text-gray-500">
-                Identity verification comes next.
-              </p>
-
-              <button
-                type="button"
-                onClick={() =>
-                  goToStep(3)
-                }
-                className="mt-4 rounded-lg border border-brand px-5 py-2 font-semibold text-brand transition hover:bg-brand-light/30"
-              >
-                ← Edit my details
-              </button>
-            </div>
-          </div>
+          <OtpStep
+            service={selectedService}
+            dentist={dentist}
+            date={date}
+            timeSlot={timeSlot}
+            patient={patient}
+            verification={verification}
+            onVerified={setVerification}
+            onBack={() => goToStep(3)}
+          />
         )}
       </div>
     </section>

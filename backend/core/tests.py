@@ -1,5 +1,8 @@
+import re
 from datetime import time, timedelta
 
+from django.core import mail
+from django.core.cache import cache
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -10,6 +13,7 @@ from .models import (
     DentistAvailability,
     DentistTimeOff,
     Service,
+    EmailOTP,
 )
 
 
@@ -727,4 +731,371 @@ class BackendAPITests(TestCase):
         self.assertIn(
             "dentist",
             r.json(),
+        )
+
+
+# ============================================================
+# Day 29: Email OTP Tests
+# ============================================================
+
+class OTPTests(TestCase):
+
+    def setUp(self):
+        # Reset the rate limiter between tests
+        cache.clear()
+
+        self.client = APIClient()
+        self.email = "patient@example.com"
+
+    def send(self, email=None):
+        return self.client.post(
+            "/api/otp/send/",
+            {
+                "email": email or self.email
+            },
+            format="json",
+        )
+
+    def verify(self, code, email=None):
+        return self.client.post(
+            "/api/otp/verify/",
+            {
+                "email": email or self.email,
+                "code": code,
+            },
+            format="json",
+        )
+
+    def last_code(self):
+        return re.search(
+            r"\b(\d{6})\b",
+            mail.outbox[-1].body,
+        ).group(1)
+
+    def wrong_code(self):
+        return (
+            "000000"
+            if self.last_code() != "000000"
+            else "111111"
+        )
+
+    def age_codes(self, seconds=120):
+        EmailOTP.objects.update(
+            created_at=timezone.now()
+            - timedelta(seconds=seconds)
+        )
+
+    def test_send_emails_a_six_digit_code(self):
+        r = self.send()
+
+        self.assertEqual(
+            r.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            1,
+        )
+
+        self.assertEqual(
+            mail.outbox[0].to,
+            [self.email],
+        )
+
+        self.assertEqual(
+            len(self.last_code()),
+            6,
+        )
+
+    def test_send_rejects_invalid_email(self):
+        r = self.send(
+            "not-an-email"
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            0,
+        )
+
+    def test_code_is_stored_hashed(self):
+        self.send()
+
+        otp = EmailOTP.objects.get()
+
+        self.assertEqual(
+            len(otp.code_hash),
+            64,
+        )
+
+        self.assertNotEqual(
+            otp.code_hash,
+            self.last_code(),
+        )
+
+    def test_resend_cooldown(self):
+        self.assertEqual(
+            self.send().status_code,
+            200,
+        )
+
+        r = self.send()
+
+        self.assertEqual(
+            r.status_code,
+            429,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "cooldown",
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            1,
+        )
+
+        self.age_codes()
+
+        self.assertEqual(
+            self.send().status_code,
+            200,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            2,
+        )
+
+    def test_hourly_send_limit(self):
+        for _ in range(5):
+
+            self.assertEqual(
+                self.send().status_code,
+                200,
+            )
+
+            self.age_codes()
+
+        r = self.send()
+
+        self.assertEqual(
+            r.status_code,
+            429,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "limit",
+        )
+
+    def test_correct_code_verifies_and_returns_token(self):
+        self.send()
+
+        r = self.verify(
+            self.last_code()
+        )
+
+        self.assertEqual(
+            r.status_code,
+            200,
+        )
+
+        self.assertTrue(
+            r.json()["verified"]
+        )
+
+        token = r.json()["token"]
+
+        self.assertTrue(token)
+
+        otp = EmailOTP.objects.get()
+
+        self.assertIsNotNone(
+            otp.verified_at
+        )
+
+        self.assertNotEqual(
+            otp.token_hash,
+            token,
+        )
+
+    def test_wrong_code_reports_attempts_left(self):
+        self.send()
+
+        r = self.verify(
+            self.wrong_code()
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "incorrect",
+        )
+
+        self.assertEqual(
+            r.json()["attempts_left"],
+            4,
+        )
+
+    def test_five_wrong_codes_lock_the_otp(self):
+        self.send()
+
+        good = self.last_code()
+        wrong = self.wrong_code()
+
+        for _ in range(5):
+
+            r = self.verify(
+                wrong
+            )
+
+            self.assertEqual(
+                r.status_code,
+                400,
+            )
+
+        self.assertEqual(
+            r.json()["code"],
+            "locked",
+        )
+
+        # Even the correct code no longer works
+        r = self.verify(good)
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "locked",
+        )
+
+    def test_expired_code_rejected(self):
+        self.send()
+
+        EmailOTP.objects.update(
+            expires_at=timezone.now()
+            - timedelta(seconds=1)
+        )
+
+        r = self.verify(
+            self.last_code()
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "expired",
+        )
+
+    def test_new_code_replaces_old_one(self):
+        self.send()
+
+        first = self.last_code()
+
+        self.age_codes()
+
+        self.send()
+
+        second = self.last_code()
+
+        if first == second:
+            self.skipTest(
+                "The two random codes happened to match"
+            )
+
+        self.assertEqual(
+            self.verify(first).status_code,
+            400,
+        )
+
+        self.assertEqual(
+            self.verify(second).status_code,
+            200,
+        )
+
+    def test_code_can_only_be_used_once(self):
+        self.send()
+
+        code = self.last_code()
+
+        self.assertEqual(
+            self.verify(code).status_code,
+            200,
+        )
+
+        r = self.verify(code)
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "none",
+        )
+
+    def test_verify_without_sending_first(self):
+        r = self.verify(
+            "123456"
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            r.json()["code"],
+            "none",
+        )
+
+    def test_malformed_code_rejected(self):
+        self.send()
+
+        r = self.verify(
+            "abc"
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "code",
+            r.json(),
+        )
+
+    def test_email_is_case_insensitive(self):
+        self.send(
+            "Patient@Example.COM"
+        )
+
+        r = self.verify(
+            self.last_code(),
+            email="patient@example.com",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            200,
         )

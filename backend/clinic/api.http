@@ -1,0 +1,8 @@
+### Verify OTP
+POST http://127.0.0.1:8000/api/otp/verify/
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "code": "456060"
+}

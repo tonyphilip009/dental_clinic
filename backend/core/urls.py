@@ -8,6 +8,8 @@ from .views import (
     GalleryListView,
     AppointmentCreateView,
     AvailabilityView,
+    SendOTPView,
+    VerifyOTPView,
 )
 
 
@@ -58,5 +60,18 @@ urlpatterns = [
         "availability/",
         AvailabilityView.as_view(),
         name="availability"
+    ),
+
+    # Email OTP
+    path(
+        "otp/send/",
+        SendOTPView.as_view(),
+        name="otp-send"
+    ),
+
+    path(
+        "otp/verify/",
+        VerifyOTPView.as_view(),
+        name="otp-verify"
     ),
 ]

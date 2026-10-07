@@ -7,8 +7,15 @@ from django.utils import timezone
 from rest_framework import generics, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import ScopedRateThrottle
 
-from .models import Service, Dentist, Testimonial, Gallery, Appointment
+from .models import (
+    Service,
+    Dentist,
+    Testimonial,
+    Gallery,
+    Appointment,
+)
 
 from .serializers import (
     ServiceSerializer,
@@ -16,9 +23,20 @@ from .serializers import (
     TestimonialSerializer,
     GallerySerializer,
     AppointmentSerializer,
+    OTPSendSerializer,
+    OTPVerifySerializer,
 )
 
-from .availability import BOOKING_WINDOW_DAYS, get_available_slots
+from .availability import (
+    BOOKING_WINDOW_DAYS,
+    get_available_slots,
+)
+
+from .otp import (
+    OTPError,
+    send_otp,
+    verify_otp,
+)
 
 
 class ServiceListView(generics.ListAPIView):
@@ -54,11 +72,14 @@ class AppointmentCreateView(generics.CreateAPIView):
         try:
             with transaction.atomic():
                 serializer.save()
+
         except IntegrityError:
             raise serializers.ValidationError(
                 {
-                    "time_slot": "Someone just booked this slot. "
-                    "Please choose another."
+                    "time_slot": (
+                        "Someone just booked this slot. "
+                        "Please choose another."
+                    )
                 }
             )
 
@@ -118,8 +139,10 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Don't allow dates more than 60 days ahead
-        if date > timezone.localdate() + timedelta(days=BOOKING_WINDOW_DAYS):
+        # Don't allow dates more than booking window ahead
+        if date > timezone.localdate() + timedelta(
+            days=BOOKING_WINDOW_DAYS
+        ):
             return Response(
                 {
                     "error": (
@@ -151,5 +174,59 @@ class AvailabilityView(APIView):
                     time.strftime("%H:%M")
                     for time in slots
                 ],
+            }
+        )
+
+
+# ============================================================
+# Day 29 - Email OTP
+# ============================================================
+
+class SendOTPView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "otp_send"
+
+    def post(self, request):
+        serializer = OTPSendSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = send_otp(
+                serializer.validated_data["email"]
+            )
+
+        except OTPError as error:
+            return Response(
+                error.payload,
+                status=error.status,
+            )
+
+        return Response(result)
+
+
+class VerifyOTPView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "otp_verify"
+
+    def post(self, request):
+        serializer = OTPVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            token = verify_otp(
+                serializer.validated_data["email"],
+                serializer.validated_data["code"],
+            )
+
+        except OTPError as error:
+            return Response(
+                error.payload,
+                status=error.status,
+            )
+
+        return Response(
+            {
+                "verified": True,
+                "token": token,
             }
         )

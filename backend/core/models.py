@@ -160,3 +160,19 @@ class DentistTimeOff(models.Model):
 
     def __str__(self):
         return f"{self.dentist.name} - {self.date}"
+
+class EmailOTP(models.Model):
+    email = models.EmailField(db_index=True)
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    token_hash = models.CharField(max_length=64, blank=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"OTP for {self.email} at {self.created_at:%Y-%m-%d %H:%M}"
