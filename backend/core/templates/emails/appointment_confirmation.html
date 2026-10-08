@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your appointment is booked</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#f0fdfa;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdfa;padding:24px 0;">
+    <tr>
+      <td align="center">
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#115e59;padding:24px;text-align:center;color:#ffffff;">
+              <div style="font-size:30px;">🦷</div>
+              <div style="font-size:22px;font-weight:bold;">
+                {{ clinic.name }}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Introduction -->
+          <tr>
+            <td style="padding:32px 24px 8px 24px;">
+              <h1 style="margin:0 0 12px 0;font-size:22px;color:#115e59;">
+                Your appointment is booked
+              </h1>
+
+              <p style="margin:0 0 8px 0;font-size:16px;line-height:1.5;">
+                Hello {{ first_name }},
+              </p>
+
+              <p style="margin:0;font-size:16px;line-height:1.5;">
+                Thank you for booking with {{ clinic.name }}.
+                Here are your appointment details:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Appointment Details -->
+          <tr>
+            <td style="padding:16px 24px;">
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdfa;border-radius:8px;">
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;width:120px;">
+                    Reference
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;font-weight:bold;color:#115e59;">
+                    {{ reference }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;">
+                    Service
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ service }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;">
+                    Dentist
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ dentist }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;">
+                    Date
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ date }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;">
+                    Time
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ time }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;">
+                    Status
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ status }}
+                  </td>
+                </tr>
+
+                {% if message %}
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;color:#6b7280;vertical-align:top;">
+                    Your message
+                  </td>
+                  <td style="padding:12px 16px;font-size:16px;">
+                    {{ message|linebreaksbr }}
+                  </td>
+                </tr>
+                {% endif %}
+
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Instructions -->
+          <tr>
+            <td style="padding:8px 24px 16px 24px;font-size:15px;line-height:1.6;">
+              <p style="margin:0 0 8px 0;">
+                Please arrive about 10 minutes early.
+              </p>
+
+              <p style="margin:0;">
+                To change or cancel, contact the clinic and quote your reference number.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Clinic Information -->
+          <tr>
+            <td style="padding:16px 24px 24px 24px;border-top:1px solid #e5e7eb;font-size:14px;line-height:1.6;color:#374151;">
+
+              <p style="margin:0 0 6px 0;font-weight:bold;color:#115e59;">
+                {{ clinic.name }}
+              </p>
+
+              <p style="margin:0;">
+                {{ clinic.address }}
+              </p>
+
+              <p style="margin:0;">
+                Phone: {{ clinic.phone }}
+              </p>
+
+              <p style="margin:0 0 8px 0;">
+                Email: {{ clinic.email }}
+              </p>
+
+              <p style="margin:0;">
+                <strong>Opening hours</strong><br>
+                {{ clinic.hours|linebreaksbr }}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 24px;background-color:#f9fafb;text-align:center;font-size:12px;color:#6b7280;">
+              If you didn't make this booking, please contact us.
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

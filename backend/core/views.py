@@ -39,6 +39,8 @@ from .otp import (
     verify_otp,
 )
 
+from .emails import send_appointment_confirmation
+
 
 class ServiceListView(generics.ListAPIView):
     queryset = Service.objects.all()
@@ -81,7 +83,7 @@ class AppointmentCreateView(generics.CreateAPIView):
                     data["verification_token"],
                 )
 
-                serializer.save()
+                appointment = serializer.save()
 
         except OTPError as error:
             raise serializers.ValidationError(
@@ -99,6 +101,27 @@ class AppointmentCreateView(generics.CreateAPIView):
                     )
                 }
             )
+
+        # The booking is saved.
+        # Email problems must never undo it.
+        self.email_sent = send_appointment_confirmation(
+            appointment
+        )
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(
+            request,
+            *args,
+            **kwargs
+        )
+
+        response.data["email_sent"] = getattr(
+            self,
+            "email_sent",
+            False
+        )
+
+        return response
 
 
 class AvailabilityView(APIView):

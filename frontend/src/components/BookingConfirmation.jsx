@@ -18,6 +18,8 @@ export default function BookingConfirmation({
 }) {
   const reference = `HOD-${String(appointment.id).padStart(5, "0")}`;
 
+  const emailSent = appointment.email_sent;
+
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div className="rounded-xl bg-white p-8 text-center shadow-md">
@@ -28,7 +30,8 @@ export default function BookingConfirmation({
         </h2>
 
         <p className="mt-2 text-gray-600">
-          Thank you, {patient.name.split(" ")[0]}. We look forward to seeing you.
+          Thank you, {patient.name.split(" ")[0]}. We look forward to seeing
+          you.
         </p>
 
         <div className="mt-6 rounded-lg bg-brand-light/30 p-4">
@@ -46,6 +49,48 @@ export default function BookingConfirmation({
               {STATUS_LABELS[appointment.status] ?? appointment.status}
             </span>
           </p>
+        </div>
+      </div>
+
+      {/* Email status */}
+      <div
+        className={`rounded-xl p-5 shadow-md ${
+          emailSent
+            ? "bg-green-50 border border-green-200"
+            : "bg-yellow-50 border border-yellow-200"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">
+            {emailSent ? "📧" : "⚠️"}
+          </span>
+
+          <div>
+            {emailSent ? (
+              <>
+                <h3 className="font-semibold text-green-800">
+                  Confirmation email sent
+                </h3>
+
+                <p className="mt-1 text-sm text-green-700">
+                  A confirmation email with your appointment details has been
+                  sent to <strong>{patient.email}</strong>.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-yellow-800">
+                  Appointment booked successfully
+                </h3>
+
+                <p className="mt-1 text-sm text-yellow-700">
+                  We couldn't send the confirmation email right now. Your
+                  appointment is still booked. Please save your booking
+                  reference: <strong>{reference}</strong>.
+                </p>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

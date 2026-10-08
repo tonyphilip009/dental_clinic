@@ -1,6 +1,7 @@
 import re
 import secrets
 from datetime import time, timedelta
+from unittest.mock import patch
 
 from django.core import mail
 from django.core.cache import cache
@@ -1095,6 +1096,125 @@ class BackendAPITests(TestCase):
         self.assertEqual(
             Appointment.objects.count(),
             0,
+        )
+
+    # ---------- Day 31: confirmation email ----------
+
+    def test_confirmation_email_is_sent(self):
+        r = self.post_booking()
+
+        self.assertEqual(
+            r.status_code,
+            201,
+            r.content,
+        )
+
+        self.assertTrue(
+            r.json()["email_sent"]
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            1,
+        )
+
+        email = mail.outbox[0]
+
+        reference = f"HOD-{r.json()['id']:05d}"
+
+        self.assertEqual(
+            email.to,
+            ["test@example.com"],
+        )
+
+        self.assertIn(
+            reference,
+            email.subject,
+        )
+
+        monday = (
+            f"{self.monday:%A}, "
+            f"{self.monday.day} "
+            f"{self.monday:%B %Y}"
+        )
+
+        for expected in [
+            "Test",
+            reference,
+            "Teeth Cleaning",
+            "Dr. Test",
+            monday,
+            "9:30 AM",
+            "Awaiting clinic confirmation",
+            "House of Dental",
+        ]:
+            self.assertIn(
+                expected,
+                email.body,
+            )
+
+        html, mimetype = email.alternatives[0]
+
+        self.assertEqual(
+            mimetype,
+            "text/html",
+        )
+
+        self.assertIn(
+            "Teeth Cleaning",
+            html,
+        )
+
+        self.assertIn(
+            "9:30 AM",
+            html,
+        )
+
+    def test_no_email_when_booking_is_rejected(self):
+        r = self.post_booking(
+            name="Tony123",
+        )
+
+        self.assertEqual(
+            r.status_code,
+            400,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            0,
+        )
+
+    def test_booking_succeeds_even_if_email_fails(self):
+        with patch(
+            "core.emails.EmailMultiAlternatives.send",
+            side_effect=Exception("SMTP is down"),
+        ):
+            r = self.post_booking()
+
+        self.assertEqual(
+            r.status_code,
+            201,
+            r.content,
+        )
+
+        self.assertFalse(
+            r.json()["email_sent"]
+        )
+
+        self.assertEqual(
+            Appointment.objects.count(),
+            1,
+        )
+
+    def test_message_appears_in_email(self):
+        self.post_booking(
+            message="I have a sensitive tooth",
+        )
+
+        self.assertIn(
+            "I have a sensitive tooth",
+            mail.outbox[0].body,
         )
 
 
