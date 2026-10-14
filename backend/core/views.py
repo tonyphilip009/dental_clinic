@@ -1,3 +1,4 @@
+
 from datetime import datetime, timedelta
 
 from django.db import IntegrityError, transaction
@@ -5,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from rest_framework import generics, serializers
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import ScopedRateThrottle
@@ -39,7 +41,17 @@ from .otp import (
     verify_otp,
 )
 
-from .emails import send_appointment_confirmation
+from .cancellation import (
+    can_cancel,
+    cancellation_summary,
+    find_by_cancel_token,
+    new_cancel_token,
+)
+
+from .emails import (
+    send_appointment_cancellation,
+    send_appointment_confirmation,
+)
 
 
 class ServiceListView(generics.ListAPIView):
@@ -67,6 +79,10 @@ class GalleryListView(generics.ListAPIView):
     serializer_class = GallerySerializer
 
 
+# ============================================================
+# Appointment Booking
+# ============================================================
+
 class AppointmentCreateView(generics.CreateAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
@@ -74,16 +90,21 @@ class AppointmentCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         data = serializer.validated_data
 
+        # Generate a private cancellation token.
+        # Store only its hash in the database.
+        cancel_token, cancel_hash = new_cancel_token()
+
         try:
-            # One transaction:
-            # If anything fails, the token is NOT used up.
+            # Keep OTP consumption and appointment creation atomic.
             with transaction.atomic():
                 consume_verification(
                     data["email"],
                     data["verification_token"],
                 )
 
-                appointment = serializer.save()
+                appointment = serializer.save(
+                    cancel_token_hash=cancel_hash
+                )
 
         except OTPError as error:
             raise serializers.ValidationError(
@@ -102,10 +123,11 @@ class AppointmentCreateView(generics.CreateAPIView):
                 }
             )
 
-        # The booking is saved.
-        # Email problems must never undo it.
+        # The appointment is already saved.
+        # Email failure must not undo the booking.
         self.email_sent = send_appointment_confirmation(
-            appointment
+            appointment,
+            cancel_token,
         )
 
     def create(self, request, *args, **kwargs):
@@ -124,6 +146,10 @@ class AppointmentCreateView(generics.CreateAPIView):
         return response
 
 
+# ============================================================
+# Appointment Availability
+# ============================================================
+
 class AvailabilityView(APIView):
 
     def get(self, request):
@@ -131,7 +157,6 @@ class AvailabilityView(APIView):
         dentist_id = request.query_params.get("dentist")
         date_str = request.query_params.get("date")
 
-        # Check if both parameters are provided
         if not dentist_id or not date_str:
             return Response(
                 {
@@ -143,7 +168,6 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Convert dentist ID to integer
         try:
             dentist_id = int(dentist_id)
 
@@ -155,7 +179,6 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Convert string date to Python date object
         try:
             date = datetime.strptime(
                 date_str,
@@ -170,7 +193,6 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Don't allow past dates
         if date < timezone.localdate():
             return Response(
                 {
@@ -179,7 +201,6 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Don't allow dates more than booking window ahead
         if date > timezone.localdate() + timedelta(
             days=BOOKING_WINDOW_DAYS
         ):
@@ -193,19 +214,16 @@ class AvailabilityView(APIView):
                 status=400
             )
 
-        # Find the dentist
         dentist = get_object_or_404(
             Dentist,
             pk=dentist_id
         )
 
-        # Get available slots
         slots = get_available_slots(
             dentist,
             date
         )
 
-        # Return the available slots
         return Response(
             {
                 "dentist": dentist.id,
@@ -268,5 +286,67 @@ class VerifyOTPView(APIView):
             {
                 "verified": True,
                 "token": token,
+            }
+        )
+
+
+# ============================================================
+# Day 32 - Appointment Cancellation
+# ============================================================
+
+class AppointmentCancelView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "cancel"
+
+    def get_appointment(self, token):
+        appointment = find_by_cancel_token(token)
+
+        if appointment is None:
+            raise NotFound(
+                "This cancellation link isn't valid."
+            )
+
+        return appointment
+
+    def get(self, request, token):
+        appointment = self.get_appointment(token)
+
+        return Response(
+            cancellation_summary(appointment)
+        )
+
+    def post(self, request, token):
+        appointment = self.get_appointment(token)
+
+        # Repeated cancellation is harmless.
+        # Do not send another cancellation email.
+        if appointment.status == "cancelled":
+            return Response(
+                {
+                    **cancellation_summary(appointment),
+                    "already_cancelled": True,
+                }
+            )
+
+        allowed, reason = can_cancel(appointment)
+
+        if not allowed:
+            return Response(
+                {
+                    "error": reason,
+                    "code": "too_late",
+                },
+                status=400
+            )
+
+        appointment.status = "cancelled"
+        appointment.save()
+
+        send_appointment_cancellation(appointment)
+
+        return Response(
+            {
+                **cancellation_summary(appointment),
+                "already_cancelled": False,
             }
         )

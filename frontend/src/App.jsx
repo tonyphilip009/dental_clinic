@@ -10,6 +10,7 @@ import Gallery from "./pages/Gallery";
 import Testimonials from "./pages/Testimonials";
 import Contact from "./pages/Contact";
 import Booking from "./pages/Booking";
+import CancelAppointment from "./pages/CancelAppointment";
 
 import "./App.css";
 
@@ -31,6 +32,12 @@ function App() {
 
         {/* Booking page */}
         <Route path="/booking" element={<Booking />} />
+
+        {/* Day 32 — Appointment cancellation */}
+        <Route
+          path="/cancel/:token"
+          element={<CancelAppointment />}
+        />
       </Routes>
 
       <Footer />

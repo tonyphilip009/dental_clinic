@@ -18,7 +18,7 @@ export default function BookingConfirmation({
 }) {
   const reference = `HOD-${String(appointment.id).padStart(5, "0")}`;
 
-  const emailSent = appointment.email_sent;
+  const emailSent = appointment.email_sent === true;
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -52,12 +52,12 @@ export default function BookingConfirmation({
         </div>
       </div>
 
-      {/* Email status */}
+      {/* Confirmation email status */}
       <div
-        className={`rounded-xl p-5 shadow-md ${
+        className={`rounded-xl border p-5 shadow-md ${
           emailSent
-            ? "bg-green-50 border border-green-200"
-            : "bg-yellow-50 border border-yellow-200"
+            ? "border-green-200 bg-green-50"
+            : "border-yellow-200 bg-yellow-50"
         }`}
       >
         <div className="flex items-start gap-3">
@@ -76,6 +76,11 @@ export default function BookingConfirmation({
                   A confirmation email with your appointment details has been
                   sent to <strong>{patient.email}</strong>.
                 </p>
+
+                <p className="mt-2 text-sm text-green-700">
+                  The email also contains a private link you can use to view
+                  your appointment and cancel it online if needed.
+                </p>
               </>
             ) : (
               <>
@@ -87,6 +92,11 @@ export default function BookingConfirmation({
                   We couldn't send the confirmation email right now. Your
                   appointment is still booked. Please save your booking
                   reference: <strong>{reference}</strong>.
+                </p>
+
+                <p className="mt-2 text-sm text-yellow-700">
+                  If you need to cancel, please contact the clinic and provide
+                  your booking reference.
                 </p>
               </>
             )}
@@ -117,8 +127,12 @@ export default function BookingConfirmation({
           </li>
 
           <li>
-            To change or cancel, contact the clinic and quote your reference
-            number.
+            Keep your booking reference for future enquiries.
+          </li>
+
+          <li>
+            If you receive the confirmation email, use its private
+            cancellation link if you need to cancel online.
           </li>
         </ul>
       </div>

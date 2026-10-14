@@ -1218,6 +1218,103 @@ class BackendAPITests(TestCase):
         )
 
 
+
+    # ---------- Day 32: appointment cancellation ----------
+
+    def book_and_get_cancel_token(self, **overrides):
+        """Create a booking and recover its one-time private cancel token from its email."""
+        response = self.post_booking(**overrides)
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertTrue(response.json().get("email_sent"))
+
+        confirmation_email = mail.outbox[-1]
+        email_content = confirmation_email.body
+        for html, _mimetype in (confirmation_email.alternatives or []):
+            email_content += html
+
+        match = re.search(r"/cancel/([A-Za-z0-9_-]+)", email_content)
+        self.assertIsNotNone(
+            match,
+            "Confirmation email should contain a private cancellation link.",
+        )
+        return response.json(), match.group(1)
+
+    def test_confirmation_email_contains_private_cancellation_link(self):
+        response, token = self.book_and_get_cancel_token()
+
+        appointment = Appointment.objects.get(id=response["id"])
+        self.assertTrue(appointment.cancel_token_hash)
+        self.assertNotIn(token, appointment.cancel_token_hash)
+        self.assertIn(f"/cancel/{token}", mail.outbox[0].body + "".join(
+            html for html, _mimetype in mail.outbox[0].alternatives
+        ))
+
+    def test_cancel_link_returns_summary_without_contact_details(self):
+        _booking, token = self.book_and_get_cancel_token()
+
+        response = self.client.get(f"/api/appointments/cancel/{token}/")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertTrue(data["can_cancel"])
+        self.assertEqual(data["status"], "pending")
+        self.assertTrue(data["reference"].startswith("HOD-"))
+        self.assertNotIn("email", data)
+        self.assertNotIn("phone", data)
+
+    def test_invalid_cancellation_token_returns_404(self):
+        response = self.client.get(
+            "/api/appointments/cancel/not-a-valid-token/"
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_cancelling_appointment_updates_status_and_sends_email(self):
+        booking, token = self.book_and_get_cancel_token()
+        appointment = Appointment.objects.get(id=booking["id"])
+
+        response = self.client.post(
+            f"/api/appointments/cancel/{token}/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "cancelled")
+        self.assertFalse(response.json()["can_cancel"])
+
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.status, "cancelled")
+        self.assertIsNotNone(appointment.cancelled_at)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("cancel", mail.outbox[-1].subject.lower())
+
+    def test_cancellation_is_idempotent(self):
+        _booking, token = self.book_and_get_cancel_token()
+        url = f"/api/appointments/cancel/{token}/"
+
+        first = self.client.post(url, {}, format="json")
+        self.assertEqual(first.status_code, 200, first.content)
+
+        second = self.client.post(url, {}, format="json")
+        self.assertEqual(second.status_code, 200, second.content)
+        self.assertTrue(second.json().get("already_cancelled"))
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_appointment_save_clears_cancelled_at_when_not_cancelled(self):
+        booking, _token = self.book_and_get_cancel_token()
+        appointment = Appointment.objects.get(id=booking["id"])
+
+        appointment.status = "cancelled"
+        appointment.save()
+        self.assertIsNotNone(appointment.cancelled_at)
+
+        appointment.status = "confirmed"
+        appointment.save()
+        appointment.refresh_from_db()
+        self.assertIsNone(appointment.cancelled_at)
+
+
 # ============================================================
 # Day 29: Email OTP Tests
 # ============================================================

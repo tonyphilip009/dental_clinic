@@ -42,9 +42,7 @@ export const createAppointment = (payload) =>
 
 // Day 29 — Email OTP
 export const sendOtp = (email) =>
-  api
-    .post("/otp/send/", { email })
-    .then((res) => res.data);
+  api.post("/otp/send/", { email }).then((res) => res.data);
 
 export const verifyOtp = (email, code) =>
   api
@@ -52,6 +50,19 @@ export const verifyOtp = (email, code) =>
       email,
       code,
     })
+    .then((res) => res.data);
+
+// Day 32 — Appointment cancellation
+// Fetch appointment details using the private cancellation token.
+export const getCancellation = (token) =>
+  api
+    .get(`/appointments/cancel/${encodeURIComponent(token)}/`)
+    .then((res) => res.data);
+
+// Cancel an appointment using the private cancellation token.
+export const cancelAppointment = (token) =>
+  api
+    .post(`/appointments/cancel/${encodeURIComponent(token)}/`)
     .then((res) => res.data);
 
 // Turns any Axios error into a message that is safe to show a patient
@@ -66,7 +77,7 @@ export function getErrorMessage(
   const data = err.response.data;
 
   if (data && typeof data === "object") {
-    // Day 29 OTP errors
+    // API errors, including cancellation errors
     if (typeof data.error === "string") {
       return data.error;
     }

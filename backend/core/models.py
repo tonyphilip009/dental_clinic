@@ -1,11 +1,18 @@
+
 from django.db import models
+from django.utils import timezone
 
 
 class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     icon = models.ImageField(upload_to='services/', blank=True, null=True)
-    price = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -33,14 +40,8 @@ class Testimonial(models.Model):
     ]
 
     patient_name = models.CharField(max_length=100)
-
-    rating = models.IntegerField(
-        choices=RATING_CHOICES,
-        default=5
-    )
-
+    rating = models.IntegerField(choices=RATING_CHOICES, default=5)
     message = models.TextField()
-
     photo = models.ImageField(
         upload_to="testimonials/",
         blank=True,
@@ -108,6 +109,14 @@ class Appointment(models.Model):
     message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Day 32: Appointment cancellation fields
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancel_token_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        editable=False
+    )
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -119,8 +128,22 @@ class Appointment(models.Model):
             )
         ]
 
+    @property
+    def reference(self):
+        return f"HOD-{self.id:05d}"
+
+    def save(self, *args, **kwargs):
+        # Keep cancelled_at in sync with the appointment status.
+        if self.status == "cancelled" and self.cancelled_at is None:
+            self.cancelled_at = timezone.now()
+        elif self.status != "cancelled":
+            self.cancelled_at = None
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name} - {self.date or self.preferred_date}"
+
 
 class DentistAvailability(models.Model):
     DAYS_OF_WEEK = [
@@ -146,6 +169,7 @@ class DentistAvailability(models.Model):
     def __str__(self):
         return f"{self.dentist.name} - {self.get_day_of_week_display()}"
 
+
 class DentistTimeOff(models.Model):
     dentist = models.ForeignKey(
         Dentist,
@@ -160,6 +184,7 @@ class DentistTimeOff(models.Model):
 
     def __str__(self):
         return f"{self.dentist.name} - {self.date}"
+
 
 class EmailOTP(models.Model):
     email = models.EmailField(db_index=True)

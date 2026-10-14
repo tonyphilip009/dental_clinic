@@ -1,3 +1,4 @@
+
 from django.urls import path
 
 from .views import (
@@ -7,6 +8,7 @@ from .views import (
     TestimonialListView,
     GalleryListView,
     AppointmentCreateView,
+    AppointmentCancelView,
     AvailabilityView,
     SendOTPView,
     VerifyOTPView,
@@ -53,6 +55,13 @@ urlpatterns = [
         "appointments/",
         AppointmentCreateView.as_view(),
         name="appointment-create"
+    ),
+
+    # Day 32: Appointment cancellation
+    path(
+        "appointments/cancel/<str:token>/",
+        AppointmentCancelView.as_view(),
+        name="appointment-cancel"
     ),
 
     # Availability
