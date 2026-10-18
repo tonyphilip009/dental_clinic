@@ -9,22 +9,15 @@ const benefits = [
 ];
 
 function AnimatedTooth() {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
-    <motion.span
-      className="relative inline-flex items-center justify-center"
-      animate={shouldReduceMotion ? undefined : { y: [0, -4, 0] }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
+    <span
+      className="tooth-float relative inline-flex items-center justify-center"
       aria-hidden="true"
     >
+      {/* Tooth icon */}
       <svg
         viewBox="0 0 64 72"
-        className="h-10 w-10 drop-shadow-[0_0_12px_rgba(214,168,63,0.4)]"
+        className="h-10 w-10 tooth-glow"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -44,26 +37,73 @@ function AnimatedTooth() {
         />
       </svg>
 
-      <motion.span
-        className="absolute -right-1 top-0 text-sm text-[#D6A83F]"
-        animate={
-          shouldReduceMotion
-            ? undefined
-            : { opacity: [0.4, 1, 0.4], scale: [0.8, 1.1, 0.8] }
-        }
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
+      {/* Upper sparkle */}
+      <span className="tooth-sparkle absolute -right-1 top-0 text-sm text-[#D6A83F]">
         ✦
-      </motion.span>
+      </span>
 
-      <span className="absolute -bottom-1 -left-1 text-xs text-[#F0D58A]">
+      {/* Lower sparkle */}
+      <span className="tooth-sparkle-delayed absolute -bottom-1 -left-1 text-xs text-[#F0D58A]">
         ✧
       </span>
-    </motion.span>
+
+      <style>{`
+        .tooth-float {
+          animation: dental-tooth-float 1.8s ease-in-out infinite !important;
+          will-change: transform;
+        }
+
+        .tooth-glow {
+          animation: dental-tooth-glow 2s ease-in-out infinite;
+        }
+
+        .tooth-sparkle {
+          animation: dental-sparkle 1.6s ease-in-out infinite;
+        }
+
+        .tooth-sparkle-delayed {
+          animation: dental-sparkle 1.5s ease-in-out 0.3s infinite;
+        }
+
+        @keyframes dental-tooth-float {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-10px) rotate(3deg);
+          }
+        }
+
+        @keyframes dental-tooth-glow {
+          0%, 100% {
+            filter: drop-shadow(0 0 4px rgba(214,168,63,0.3));
+          }
+          50% {
+            filter: drop-shadow(0 0 15px rgba(214,168,63,0.85));
+          }
+        }
+
+        @keyframes dental-sparkle {
+          0%, 100% {
+            opacity: 0.35;
+            transform: scale(0.75);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .tooth-float,
+          .tooth-glow,
+          .tooth-sparkle,
+          .tooth-sparkle-delayed {
+            animation: none !important;
+          }
+        }
+      `}</style>
+    </span>
   );
 }
 
@@ -82,13 +122,13 @@ export default function Hero() {
         aria-hidden="true"
       />
 
-      {/* Softer overlay to reveal the smile */}
+      {/* Background overlay */}
       <div
         className="absolute inset-0 -z-20 bg-gradient-to-r from-[#090908] from-[0%] via-[#090908]/90 via-[30%] via-[#090908]/35 via-[55%] to-transparent"
         aria-hidden="true"
       />
 
-      {/* Subtle top and bottom shading */}
+      {/* Top and bottom shading */}
       <div
         className="absolute inset-0 -z-10 bg-gradient-to-t from-[#090908]/65 via-transparent via-[25%] to-[#090908]/10"
         aria-hidden="true"
@@ -139,7 +179,7 @@ export default function Hero() {
             towards a healthier, more confident smile.
           </motion.p>
 
-          {/* Premium mirror-shine buttons */}
+          {/* Action buttons */}
           <motion.div
             className="mt-7 flex flex-wrap items-center gap-4"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
@@ -170,20 +210,18 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Animated luxury benefits strip */}
+        {/* Benefits strip */}
         <motion.div
           className="benefits-strip relative mt-12 grid grid-cols-1 overflow-hidden rounded-xl border border-[#D6A83F]/20 bg-[#0E0D0B]/85 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:grid-cols-3"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
         >
-          {/* Moving reflection */}
           <span
             aria-hidden="true"
             className="benefits-shine pointer-events-none absolute inset-y-0 left-0 z-10 w-1/4"
           />
 
-          {/* Gold top accent */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-[#D6A83F]/60 to-transparent"
@@ -209,19 +247,16 @@ export default function Hero() {
                   : { y: -2, transition: { duration: 0.2 } }
               }
             >
-              {/* Number marker */}
               <span className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#D6A83F]/25 bg-[#D6A83F]/[0.06] transition-all duration-300 group-hover:border-[#D6A83F]/70 group-hover:bg-[#D6A83F]/[0.13] group-hover:shadow-[0_0_18px_rgba(214,168,63,0.12)]">
                 <span className="font-serif text-sm text-[#D6A83F] transition-colors duration-300 group-hover:text-[#F0D58A]">
                   0{index + 1}
                 </span>
               </span>
 
-              {/* Benefit text */}
               <span className="relative z-10 flex-1 text-sm font-medium tracking-[0.01em] text-[#D6D0C6] transition-colors duration-300 group-hover:text-[#FFF8E7]">
                 {benefit}
               </span>
 
-              {/* Hover arrow */}
               <span
                 aria-hidden="true"
                 className="relative z-10 translate-x-[-4px] text-sm text-[#D6A83F] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
@@ -229,7 +264,6 @@ export default function Hero() {
                 ↗
               </span>
 
-              {/* Bottom hover accent */}
               <span
                 aria-hidden="true"
                 className="absolute inset-x-5 bottom-0 z-10 h-px origin-left scale-x-0 bg-gradient-to-r from-[#D6A83F]/70 to-transparent transition-transform duration-300 group-hover:scale-x-100 sm:inset-x-6"
