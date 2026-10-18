@@ -15,6 +15,7 @@ const LINKS = [
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
   const { pathname } = useLocation();
   const reduceMotion = useReducedMotion();
 
@@ -28,7 +29,10 @@ function Navbar() {
     };
 
     handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
@@ -66,17 +70,15 @@ function Navbar() {
       initial={false}
       animate={{
         backgroundColor: scrolled
-          ? "rgba(11, 11, 10, 0.88)"
+          ? "rgba(11, 11, 10, 0.72)"
           : "rgba(11, 11, 10, 0)",
-        borderBottomColor: scrolled
-          ? "rgba(214, 168, 63, 0.18)"
-          : "rgba(214, 168, 63, 0)",
+        borderBottomColor: "rgba(214, 168, 63, 0)",
       }}
       transition={{
         duration: reduceMotion ? 0 : 0.3,
         ease: "easeOut",
       }}
-      className={`fixed inset-x-0 top-0 z-50 border-b text-white ${
+      className={`fixed inset-x-0 top-0 z-50 text-white ${
         scrolled
           ? "shadow-lg shadow-black/10 backdrop-blur-xl"
           : "backdrop-blur-0"
@@ -86,7 +88,7 @@ function Navbar() {
         className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 transition-all duration-300 sm:px-8 lg:px-12"
         aria-label="Main navigation"
       >
-        {/* Brand logo and name */}
+        {/* Brand logo */}
         <Link
           to="/"
           aria-label="House of Dental home"
@@ -174,14 +176,15 @@ function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile and tablet dropdown */}
+      {/* Mobile and tablet menu */}
       {menuOpen && (
         <motion.div
           id="mobile-menu"
           initial={reduceMotion ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.2,
+          }}
           className="border-t border-[#D6A83F]/20 bg-[#0B0B0A]/95 shadow-xl backdrop-blur-xl min-[1024px]:hidden"
         >
           <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 sm:px-8">

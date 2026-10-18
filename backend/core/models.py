@@ -6,13 +6,45 @@ from django.utils import timezone
 class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    icon = models.ImageField(upload_to='services/', blank=True, null=True)
+
+    icon = models.ImageField(
+        upload_to="services/",
+        blank=True,
+        null=True
+    )
+
+    image = models.ImageField(
+        upload_to="services/images/",
+        blank=True,
+        null=True
+    )
+
     price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         blank=True,
         null=True
     )
+
+    # Dynamic treatment details managed through Django Admin.
+    benefits = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Enter a JSON list, e.g. ["Healthier gums", "Early detection"]'
+    )
+
+    treatment_steps = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Enter a JSON list of objects with "title" and "description".'
+    )
+
+    aftercare = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Enter a JSON list, e.g. ["Brush twice daily", "Floss daily"]'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -23,7 +55,7 @@ class Dentist(models.Model):
     name = models.CharField(max_length=100)
     specialization = models.CharField(max_length=150, blank=True)
     bio = models.TextField(blank=True)
-    photo = models.ImageField(upload_to='dentists/', blank=True, null=True)
+    photo = models.ImageField(upload_to="dentists/", blank=True, null=True)
     years_experience = models.PositiveIntegerField(default=0)
 
     def __str__(self):
@@ -54,7 +86,7 @@ class Testimonial(models.Model):
 
 class Gallery(models.Model):
     title = models.CharField(max_length=150, blank=True)
-    image = models.ImageField(upload_to='gallery/')
+    image = models.ImageField(upload_to="gallery/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -109,7 +141,6 @@ class Appointment(models.Model):
     message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Day 32: Appointment cancellation fields
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancel_token_hash = models.CharField(
         max_length=64,
@@ -133,7 +164,6 @@ class Appointment(models.Model):
         return f"HOD-{self.id:05d}"
 
     def save(self, *args, **kwargs):
-        # Keep cancelled_at in sync with the appointment status.
         if self.status == "cancelled" and self.cancelled_at is None:
             self.cancelled_at = timezone.now()
         elif self.status != "cancelled":
