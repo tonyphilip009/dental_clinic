@@ -1,9 +1,10 @@
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route } from "react-router-dom";
 import { MotionConfig } from "motion/react";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import AnimatedRoutes from "./components/AnimatedRoutes";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -24,15 +25,21 @@ function App() {
       <BrowserRouter>
         <Navbar />
 
-        <Routes>
+        <AnimatedRoutes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
 
           <Route path="/services" element={<Services />} />
-          <Route path="/services/:id" element={<ServiceDetail />} />
+          <Route
+            path="/services/:id"
+            element={<ServiceDetail />}
+          />
 
           <Route path="/gallery" element={<Gallery />} />
-          <Route path="/testimonials" element={<Testimonials />} />
+          <Route
+            path="/testimonials"
+            element={<Testimonials />}
+          />
           <Route path="/contact" element={<Contact />} />
 
           {/* Appointment booking */}
@@ -44,12 +51,12 @@ function App() {
             element={<CancelAppointment />}
           />
 
-          {/* Day 34 — Temporary design style guide */}
+          {/* Temporary design style guide */}
           <Route
             path="/style-guide"
             element={<StyleGuide />}
           />
-        </Routes>
+        </AnimatedRoutes>
 
         <Footer />
       </BrowserRouter>

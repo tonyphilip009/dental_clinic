@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
+import { motion, useReducedMotion } from "motion/react";
 
 const LINKS = [
   { to: "/", label: "Home", end: true },
@@ -13,11 +14,26 @@ const LINKS = [
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -36,19 +52,38 @@ function Navbar() {
   }, [menuOpen]);
 
   const desktopLink = ({ isActive }) =>
-    `rounded-md px-3 py-2 text-sm font-medium transition duration-300 hover:text-[#D6A83F] ${
-      isActive ? "text-[#D6A83F]" : "text-white"
+    `rounded-md px-3 py-2 text-sm font-medium transition duration-300 hover:text-[#F0D58A] ${
+      isActive ? "text-[#F0D58A]" : "text-[#F5F0E6]"
     }`;
 
   const mobileLink = ({ isActive }) =>
     `block rounded-lg px-4 py-3 font-medium transition duration-300 hover:bg-white/10 ${
-      isActive ? "text-[#D6A83F]" : "text-[#F5F0E6]"
+      isActive ? "text-[#F0D58A]" : "text-[#F5F0E6]"
     }`;
 
   return (
-    <header className="absolute inset-x-0 top-0 z-50 bg-transparent text-white">
+    <motion.header
+      initial={false}
+      animate={{
+        backgroundColor: scrolled
+          ? "rgba(11, 11, 10, 0.88)"
+          : "rgba(11, 11, 10, 0)",
+        borderBottomColor: scrolled
+          ? "rgba(214, 168, 63, 0.18)"
+          : "rgba(214, 168, 63, 0)",
+      }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.3,
+        ease: "easeOut",
+      }}
+      className={`fixed inset-x-0 top-0 z-50 border-b text-white ${
+        scrolled
+          ? "shadow-lg shadow-black/10 backdrop-blur-xl"
+          : "backdrop-blur-0"
+      }`}
+    >
       <nav
-        className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-8 lg:px-12"
+        className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 transition-all duration-300 sm:px-8 lg:px-12"
         aria-label="Main navigation"
       >
         {/* Brand logo and name */}
@@ -57,14 +92,12 @@ function Navbar() {
           aria-label="House of Dental home"
           className="flex min-w-0 shrink-0 items-center gap-4 sm:gap-5"
         >
-          {/* Circular H logo */}
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D6A83F]/80 font-serif text-2xl font-medium text-[#F0D58A] transition duration-300 hover:bg-white/10 sm:h-12 sm:w-12 sm:text-3xl">
             H
           </span>
 
-          {/* Clinic name and tagline */}
           <span className="flex flex-col">
-            <span className="whitespace-nowrap text-base font-semibold tracking-wide text-white sm:text-xl lg:text-2xl">
+            <span className="whitespace-nowrap text-base font-semibold tracking-wide text-[#F5F0E6] sm:text-xl lg:text-2xl">
               HOUSE OF DENTAL
             </span>
 
@@ -89,7 +122,7 @@ function Navbar() {
 
           <Link
             to="/booking"
-            className="ml-2 whitespace-nowrap rounded-md bg-[#D6A83F] px-5 py-3 text-sm font-semibold text-[#090908] transition duration-300 hover:-translate-y-0.5 hover:bg-[#F0D58A]"
+            className="ml-2 whitespace-nowrap rounded-md bg-[#D6A83F] px-5 py-3 text-sm font-semibold text-[#090908] transition duration-300 hover:-translate-y-0.5 hover:bg-[#F0D58A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F0D58A]"
           >
             Book Now
           </Link>
@@ -143,9 +176,13 @@ function Navbar() {
 
       {/* Mobile and tablet dropdown */}
       {menuOpen && (
-        <div
+        <motion.div
           id="mobile-menu"
-          className="border-t border-white/10 bg-[#0B0B0A]/95 shadow-xl backdrop-blur-xl min-[1024px]:hidden"
+          initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          className="border-t border-[#D6A83F]/20 bg-[#0B0B0A]/95 shadow-xl backdrop-blur-xl min-[1024px]:hidden"
         >
           <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 sm:px-8">
             {LINKS.map((link) => (
@@ -159,9 +196,9 @@ function Navbar() {
               </NavLink>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
-    </header>
+    </motion.header>
   );
 }
 

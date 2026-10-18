@@ -1,4 +1,6 @@
+
 import { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 import {
   getAvailability,
@@ -19,8 +21,9 @@ import {
 import DentistAvatar from "./DentistAvatar";
 import EmptyState from "./EmptyState";
 import ErrorMessage from "./ErrorMessage";
-import Loading from "./Loading";
+import { CardSkeletonGrid, Skeleton } from "./ui/Skeleton";
 
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function ScheduleStep({
   service,
@@ -33,15 +36,12 @@ export default function ScheduleStep({
   onBack,
   onContinue,
 }) {
-  // Load all dentists
   const dentistsState = useFetch(getDentists);
   const dentists = dentistsState.data ?? [];
+  const reduceMotion = useReducedMotion();
 
-  // Date limits
   const today = new Date();
-
   const minDate = toInputDate(today);
-
   const maxDate = toInputDate(
     addDays(today, BOOKING_WINDOW_DAYS)
   );
@@ -51,9 +51,7 @@ export default function ScheduleStep({
     date >= minDate &&
     date <= maxDate;
 
-  // Only load availability when dentist + valid date exist
-  const canLoadSlots =
-    Boolean(dentist) && dateIsValid;
+  const canLoadSlots = Boolean(dentist) && dateIsValid;
 
   const slotsState = useFetch(
     () =>
@@ -65,38 +63,35 @@ export default function ScheduleStep({
 
   const slots = slotsState.data ?? [];
 
-  // Used while checking the selected slot
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState("");
 
-  // Dentist selection
-  const pickDentist = (d) => {
+  const pickDentist = (selectedDentist) => {
     setCheckError("");
-    onDentistChange(d);
+    onDentistChange(selectedDentist);
   };
 
-  // Date selection
   const pickDate = (value) => {
     setCheckError("");
     onDateChange(value);
   };
 
-  // Time selection
   const pickSlot = (slot) => {
     setCheckError("");
     onTimeChange(slot);
   };
 
-  // Re-check selected slot with backend
+  // Re-check availability before allowing the patient to continue.
   const handleContinue = async () => {
+    if (!dentist || !dateIsValid || !timeSlot || checking) {
+      return;
+    }
+
     setChecking(true);
     setCheckError("");
 
     try {
-      const freshSlots = await getAvailability(
-        dentist.id,
-        date
-      );
+      const freshSlots = await getAvailability(dentist.id, date);
 
       if (!freshSlots.includes(timeSlot)) {
         onTimeChange("");
@@ -124,16 +119,17 @@ export default function ScheduleStep({
 
   return (
     <div className="space-y-10">
-
-      {/* ==================== Dentist ==================== */}
-
-      <div>
+      {/* Dentist selection */}
+      <section>
         <h2 className="mb-6 text-center text-2xl font-semibold text-brand-dark">
           Choose your dentist
         </h2>
 
         {dentistsState.loading && (
-          <Loading message="Loading our dentists..." />
+          <CardSkeletonGrid
+            count={3}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          />
         )}
 
         {dentistsState.error && (
@@ -159,19 +155,38 @@ export default function ScheduleStep({
           !dentistsState.error &&
           dentists.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {dentists.map((d) => {
+              {dentists.map((d, index) => {
                 const isSelected = dentist?.id === d.id;
 
                 return (
-                  <button
+                  <motion.button
                     type="button"
                     key={d.id}
                     onClick={() => pickDentist(d)}
                     aria-pressed={isSelected}
-                    className={`flex items-center gap-4 rounded-xl bg-white p-4 text-left shadow-md transition ${
+                    initial={
+                      reduceMotion ? false : { opacity: 0, y: 14 }
+                    }
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: isSelected && !reduceMotion ? 1.01 : 1,
+                    }}
+                    whileHover={
+                      reduceMotion ? undefined : { y: -3 }
+                    }
+                    whileTap={
+                      reduceMotion ? undefined : { scale: 0.98 }
+                    }
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.3,
+                      delay: reduceMotion ? 0 : (index % 3) * 0.05,
+                      ease: EASE,
+                    }}
+                    className={`flex items-center gap-4 rounded-2xl border bg-white p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                       isSelected
-                        ? "ring-2 ring-brand"
-                        : "hover:-translate-y-1 hover:shadow-lg"
+                        ? "border-accent ring-2 ring-accent/40 shadow-lg"
+                        : "border-accent/15 shadow-sm hover:border-accent/40 hover:shadow-md"
                     }`}
                   >
                     <DentistAvatar
@@ -179,40 +194,41 @@ export default function ScheduleStep({
                       name={d.name}
                     />
 
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-brand-dark">
                         {d.name}
                       </p>
 
-                      <p className="text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-gray-600">
                         {d.specialization}
                       </p>
                     </div>
 
                     {isSelected && (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-white">
+                      <span
+                        aria-label="Selected"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-brand-dark"
+                      >
                         ✓
                       </span>
                     )}
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
           )}
-      </div>
+      </section>
 
-      {/* ==================== Date ==================== */}
-
-      <div>
+      {/* Date selection */}
+      <section>
         <h2 className="mb-6 text-center text-2xl font-semibold text-brand-dark">
           Pick a date
         </h2>
 
-        <div className="mx-auto max-w-sm rounded-xl bg-white p-5 shadow-md">
-
+        <div className="mx-auto max-w-sm rounded-2xl border border-accent/15 bg-white p-5 shadow-sm">
           <label
             htmlFor="appointment-date"
-            className="mb-2 block font-medium text-gray-700"
+            className="mb-2 block font-medium text-brand-dark"
           >
             Appointment date
           </label>
@@ -223,25 +239,21 @@ export default function ScheduleStep({
             value={date}
             min={minDate}
             max={maxDate}
-            onChange={(e) =>
-              pickDate(e.target.value)
-            }
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+            onChange={(event) => pickDate(event.target.value)}
+            className="w-full rounded-lg border border-accent/25 bg-white px-4 py-3 text-brand-dark focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
 
           {date && !dateIsValid && (
-            <p className="mt-2 text-sm text-red-600">
+            <p className="mt-2 text-sm text-red-600" role="alert">
               Please choose a date from today up to{" "}
               {formatDisplayDate(maxDate)}.
             </p>
           )}
-
         </div>
-      </div>
+      </section>
 
-      {/* ==================== Time Slots ==================== */}
-
-      <div>
+      {/* Time-slot selection */}
+      <section>
         <h2 className="mb-6 text-center text-2xl font-semibold text-brand-dark">
           Choose a time
         </h2>
@@ -259,7 +271,11 @@ export default function ScheduleStep({
         )}
 
         {canLoadSlots && slotsState.loading && (
-          <Loading message="Checking available times..." />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton key={index} className="h-12 rounded-lg" />
+            ))}
+          </div>
         )}
 
         {canLoadSlots && slotsState.error && (
@@ -290,47 +306,59 @@ export default function ScheduleStep({
           !slotsState.error &&
           slots.length > 0 && (
             <div>
-
               <p className="mb-4 text-center text-gray-600">
-                {formatDisplayDate(date)} with{" "}
-                {dentist.name}
+                {formatDisplayDate(date)} with {dentist.name}
               </p>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-
-                {slots.map((slot) => {
-                  const isSelected =
-                    slot === timeSlot;
+                {slots.map((slot, index) => {
+                  const isSelected = slot === timeSlot;
 
                   return (
-                    <button
+                    <motion.button
                       type="button"
                       key={slot}
                       onClick={() => pickSlot(slot)}
                       aria-pressed={isSelected}
-                      className={`rounded-lg border px-3 py-3 font-medium transition ${
+                      initial={
+                        reduceMotion ? false : { opacity: 0, y: 8 }
+                      }
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        scale: isSelected && !reduceMotion ? 1.03 : 1,
+                      }}
+                      whileHover={
+                        reduceMotion ? undefined : { y: -2 }
+                      }
+                      whileTap={
+                        reduceMotion ? undefined : { scale: 0.97 }
+                      }
+                      transition={{
+                        duration: reduceMotion ? 0 : 0.22,
+                        delay: reduceMotion ? 0 : Math.min(index * 0.025, 0.2),
+                        ease: EASE,
+                      }}
+                      className={`rounded-lg border px-3 py-3 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                         isSelected
-                          ? "border-brand bg-brand text-white"
-                          : "border-gray-300 bg-white text-brand-dark hover:border-brand"
+                          ? "border-accent bg-accent text-brand-dark shadow-sm"
+                          : "border-accent/20 bg-white text-brand-dark hover:border-accent/60"
                       }`}
                     >
                       {formatTime(slot)}
-                    </button>
+                    </motion.button>
                   );
                 })}
-
               </div>
             </div>
           )}
-      </div>
+      </section>
 
-      {/* ==================== Summary ==================== */}
-
-      <div className="rounded-xl bg-white p-5 shadow-md">
-
+      {/* Booking summary and navigation */}
+      <section className="rounded-2xl border border-accent/15 bg-white p-5 shadow-sm">
         {checkError && (
           <p
-            className="mb-4 rounded-lg bg-red-50 p-3 text-center text-red-700"
+            className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center text-red-700"
             role="alert"
           >
             {checkError}
@@ -338,7 +366,6 @@ export default function ScheduleStep({
         )}
 
         <p className="mb-4 text-center text-gray-700 sm:text-left">
-
           {timeSlot ? (
             <>
               <span className="font-semibold text-brand-dark">
@@ -356,17 +383,13 @@ export default function ScheduleStep({
           ) : (
             "Select a dentist, date, and time to continue."
           )}
-
         </p>
 
-        {/* Navigation */}
-
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-
           <button
             type="button"
             onClick={onBack}
-            className="rounded-lg border border-brand px-5 py-3 font-semibold text-brand transition hover:bg-brand-light/30"
+            className="rounded-lg border border-accent/40 px-5 py-3 font-semibold text-brand-dark transition hover:bg-brand-light/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             ← Change service
           </button>
@@ -375,17 +398,12 @@ export default function ScheduleStep({
             type="button"
             disabled={!timeSlot || checking}
             onClick={handleContinue}
-            className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {checking
-              ? "Checking availability..."
-              : "Continue"}
+            {checking ? "Checking availability..." : "Continue →"}
           </button>
-
         </div>
-
-      </div>
-
+      </section>
     </div>
   );
 }
