@@ -1,4 +1,7 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MotionConfig } from "motion/react";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -11,37 +14,46 @@ import Testimonials from "./pages/Testimonials";
 import Contact from "./pages/Contact";
 import Booking from "./pages/Booking";
 import CancelAppointment from "./pages/CancelAppointment";
+import StyleGuide from "./pages/StyleGuide";
 
 import "./App.css";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <Navbar />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
 
-        <Route path="/services" element={<Services />} />
-        <Route path="/services/:id" element={<ServiceDetail />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:id" element={<ServiceDetail />} />
 
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/testimonials" element={<Testimonials />} />
-        <Route path="/contact" element={<Contact />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/testimonials" element={<Testimonials />} />
+          <Route path="/contact" element={<Contact />} />
 
-        {/* Booking page */}
-        <Route path="/booking" element={<Booking />} />
+          {/* Appointment booking */}
+          <Route path="/booking" element={<Booking />} />
 
-        {/* Day 32 — Appointment cancellation */}
-        <Route
-          path="/cancel/:token"
-          element={<CancelAppointment />}
-        />
-      </Routes>
+          {/* Appointment cancellation */}
+          <Route
+            path="/cancel/:token"
+            element={<CancelAppointment />}
+          />
 
-      <Footer />
-    </BrowserRouter>
+          {/* Day 34 — Temporary design style guide */}
+          <Route
+            path="/style-guide"
+            element={<StyleGuide />}
+          />
+        </Routes>
+
+        <Footer />
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
 

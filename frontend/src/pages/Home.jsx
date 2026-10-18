@@ -3,133 +3,156 @@ import { Link } from "react-router-dom";
 
 function Home() {
   return (
-    <div className="overflow-x-clip bg-brand-light/30">
+    <div className="overflow-x-clip bg-[#faf8f4]">
       {/* HERO */}
-      <section className="bg-brand-dark text-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
-          {/* Hero content */}
-          <div className="min-w-0 text-center lg:text-left">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent">
+      <section className="relative isolate min-h-[600px] overflow-hidden bg-[#17283f] text-white sm:min-h-[650px] lg:min-h-[700px]">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 -z-20 bg-cover bg-center"
+          style={{
+            backgroundImage: "url('/dental-hero.png')",
+          }}
+          role="img"
+          aria-label="Dentist in a modern dental clinic"
+        />
+
+        {/* Navy overlay for readable text */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#10243d]/95 via-[#17283f]/75 to-[#17283f]/25" />
+
+        {/* Hero content */}
+        <div className="mx-auto grid min-h-[600px] max-w-7xl grid-cols-1 items-center gap-10 px-5 py-16 sm:min-h-[650px] sm:px-8 lg:min-h-[700px] lg:grid-cols-2 lg:gap-12 lg:px-12 lg:py-20">
+          <div className="max-w-2xl text-center lg:text-left">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-[#e8d8b5]">
               Welcome to House of Dental
             </p>
 
-            <h1 className="mb-6 text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">
-              Healthy smiles start with gentle, caring dentistry
+            <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+              Your Smile,
+              <span className="mt-2 block text-[#e8d8b5]">
+                Our Priority
+              </span>
             </h1>
 
-            <p className="mx-auto mb-8 max-w-xl text-base text-white/80 sm:text-lg lg:mx-0">
-              Modern treatments, experienced dentists, and a comfortable
-              environment for the whole family.
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg lg:mx-0">
+              Experience gentle, modern dental care with experienced
+              professionals dedicated to keeping your smile healthy and bright.
             </p>
 
-            {/* Hero buttons */}
-            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4 lg:justify-start">
+            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
               <Link
                 to="/booking"
-                className="inline-flex w-full items-center justify-center rounded-full bg-accent px-6 py-3 font-semibold text-brand-dark transition hover:opacity-90 sm:w-auto sm:px-8"
+                className="inline-flex items-center justify-center rounded-xl bg-[#c5a46d] px-7 py-3.5 font-semibold text-[#17283f] shadow-lg transition duration-300 hover:-translate-y-1 hover:bg-[#e8d8b5]"
               >
                 Book an Appointment
               </Link>
 
               <Link
                 to="/services"
-                className="inline-flex w-full items-center justify-center rounded-full border border-white/60 px-6 py-3 font-semibold text-white transition hover:bg-white/10 sm:w-auto sm:px-8"
+                className="inline-flex items-center justify-center rounded-xl border border-white/60 bg-white/5 px-7 py-3.5 font-semibold text-white backdrop-blur-sm transition duration-300 hover:bg-white/15"
               >
-                Our Services
+                Explore Our Services
               </Link>
+            </div>
+
+            <div className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-white/80 lg:justify-start">
+              <span>✓ Patient-focused care</span>
+              <span>✓ Modern treatments</span>
+              <span>✓ Easy appointment booking</span>
             </div>
           </div>
 
-          {/* Hero visual */}
-          <div className="mx-auto flex aspect-[4/3] w-full max-w-md items-center justify-center rounded-3xl bg-brand text-7xl sm:text-8xl lg:max-w-none">
-            <span aria-label="Tooth" role="img">
-              🦷
-            </span>
-          </div>
+          {/* Keeps the right side available for the background dentist */}
+          <div className="hidden lg:block" aria-hidden="true" />
         </div>
       </section>
 
       {/* INTRO */}
-      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-12">
-          <h2 className="mb-4 text-2xl font-bold text-brand-dark sm:text-3xl">
-            Why patients choose us
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <div className="mx-auto mb-12 max-w-3xl text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#a88750]">
+            The House of Dental difference
+          </p>
+
+          <h2 className="mb-5 text-3xl font-bold text-[#17283f] sm:text-4xl">
+            Care that puts your smile first
           </h2>
 
-          <p className="leading-relaxed text-gray-700">
-            At House of Dental, we believe a visit to the dentist should be
-            calm, comfortable, and stress-free. Our friendly team combines
-            years of experience with modern technology to give you and your
-            family the best possible care, from routine check-ups to advanced
-            treatments.
+          <p className="leading-relaxed text-[#596474]">
+            We believe every dental visit should feel comfortable, calm,
+            and stress-free. Our friendly team combines professional care
+            with modern treatments to support your oral health at every stage.
           </p>
         </div>
 
-        {/* Feature cards */}
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="min-w-0 rounded-2xl bg-white p-6 text-center shadow sm:p-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-2xl bg-white p-7 text-center shadow-[0_12px_32px_-14px_rgba(23,40,63,0.18)] ring-1 ring-[#17283f]/5 transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
             <div className="mb-4 text-4xl" aria-hidden="true">
               👨‍⚕️
             </div>
 
-            <h3 className="mb-2 text-xl font-semibold text-brand-dark">
+            <h3 className="mb-3 text-xl font-semibold text-[#17283f]">
               Experienced Dentists
             </h3>
 
-            <p className="leading-relaxed text-gray-600">
-              Our qualified dentists have years of hands-on experience and
-              take the time to explain every step of your treatment.
+            <p className="leading-relaxed text-[#596474]">
+              Our dentists take the time to understand your needs and explain
+              your treatment options clearly.
             </p>
           </div>
 
-          <div className="min-w-0 rounded-2xl bg-white p-6 text-center shadow sm:p-8">
+          <div className="rounded-2xl bg-white p-7 text-center shadow-[0_12px_32px_-14px_rgba(23,40,63,0.18)] ring-1 ring-[#17283f]/5 transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
             <div className="mb-4 text-4xl" aria-hidden="true">
               🩺
             </div>
 
-            <h3 className="mb-2 text-xl font-semibold text-brand-dark">
+            <h3 className="mb-3 text-xl font-semibold text-[#17283f]">
               Modern Equipment
             </h3>
 
-            <p className="leading-relaxed text-gray-600">
-              We use up-to-date dental technology to keep every procedure safe,
-              precise, and as comfortable as possible.
+            <p className="leading-relaxed text-[#596474]">
+              Modern dental technology supports precise treatment and a more
+              comfortable patient experience.
             </p>
           </div>
 
-          <div className="min-w-0 rounded-2xl bg-white p-6 text-center shadow sm:p-8 md:col-span-2 lg:col-span-1">
+          <div className="rounded-2xl bg-white p-7 text-center shadow-[0_12px_32px_-14px_rgba(23,40,63,0.18)] ring-1 ring-[#17283f]/5 transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8 md:col-span-2 lg:col-span-1">
             <div className="mb-4 text-4xl" aria-hidden="true">
               😁
             </div>
 
-            <h3 className="mb-2 text-xl font-semibold text-brand-dark">
-              Caring for Every Smile
+            <h3 className="mb-3 text-xl font-semibold text-[#17283f]">
+              Care for Every Smile
             </h3>
 
-            <p className="leading-relaxed text-gray-600">
-              From children to grandparents, we offer gentle, family-friendly
-              care that helps every patient feel at ease.
+            <p className="leading-relaxed text-[#596474]">
+              From routine check-ups to more advanced treatments, we help
+              patients of all ages care for their smiles.
             </p>
           </div>
         </div>
       </section>
 
       {/* CTA BANNER */}
-      <section className="bg-brand px-4 py-12 text-center text-white sm:py-16">
+      <section className="bg-[#17283f] px-4 py-16 text-center text-white sm:py-20">
         <div className="mx-auto max-w-3xl">
-          <h2 className="mb-4 text-2xl font-bold sm:text-3xl">
-            Ready for a brighter smile?
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#e8d8b5]">
+            Your next visit starts here
+          </p>
+
+          <h2 className="mb-5 text-3xl font-bold sm:text-4xl">
+            Ready for a healthier smile?
           </h2>
 
-          <p className="mx-auto mb-8 max-w-xl leading-relaxed text-white/90">
-            Book your visit today and let our team take care of the rest.
+          <p className="mx-auto mb-8 max-w-xl leading-relaxed text-white/80">
+            Book your appointment and let our team help you take the next step
+            toward better oral health.
           </p>
 
           <Link
             to="/booking"
-            className="inline-flex w-full items-center justify-center rounded-full bg-white px-8 py-3 font-semibold text-brand-dark transition hover:bg-brand-light sm:w-auto"
+            className="inline-flex items-center justify-center rounded-xl bg-[#c5a46d] px-8 py-3.5 font-semibold text-[#17283f] transition duration-300 hover:-translate-y-1 hover:bg-[#e8d8b5]"
           >
-            Book Now
+            Book Your Visit
           </Link>
         </div>
       </section>
