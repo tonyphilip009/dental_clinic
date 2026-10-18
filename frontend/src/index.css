@@ -1,19 +1,23 @@
 
 @import "tailwindcss";
 
-@theme {
-  /* Luxury Navy & Ivory palette */
-  --color-brand-deep: #17283f;
-  --color-brand-dark: #243b55;
-  --color-brand: #304b68;
-  --color-brand-vivid: #56728e;
-  --color-brand-light: #e8e0d2;
+/* =========================================
+   HOUSE OF DENTAL — DESIGN SYSTEM
+========================================= */
 
-  --color-accent: #c5a46d;
-  --color-gold-light: #e8d8b5;
-  --color-aqua: #c8d5df;
-  --color-mint: #f5f0e6;
-  --color-ink: #273244;
+@theme {
+  /* Dark luxury dental palette */
+  --color-brand-deep: #0B0B0A;
+  --color-brand-dark: #171613;
+  --color-brand: #0F0F0D;
+  --color-brand-vivid: #34312A;
+  --color-brand-light: #29261F;
+
+  --color-accent: #D6A83F;
+  --color-gold-light: #F0D58A;
+  --color-aqua: #C9C2B6;
+  --color-mint: #F5F0E6;
+  --color-ink: #F5F0E6;
 
   /* Typography */
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
@@ -21,8 +25,8 @@
     ui-sans-serif, system-ui, sans-serif;
 
   /* Shadows */
-  --shadow-glow: 0 12px 36px -12px rgb(197 164 109 / 0.38);
-  --shadow-soft: 0 12px 32px -14px rgb(23 40 63 / 0.18);
+  --shadow-glow: 0 12px 36px -12px rgb(214 168 63 / 0.25);
+  --shadow-soft: 0 12px 32px -14px rgb(0 0 0 / 0.35);
 
   /* Animation utilities */
   --animate-float: float 6s ease-in-out infinite;
@@ -32,18 +36,22 @@
   --animate-shimmer: shimmer 1.6s linear infinite;
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
     }
+
     50% {
       transform: translateY(-14px);
     }
   }
 
   @keyframes gradient-shift {
-    0%, 100% {
+    0%,
+    100% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
@@ -54,6 +62,7 @@
       transform: scale(0.8);
       opacity: 0.6;
     }
+
     100% {
       transform: scale(1.8);
       opacity: 0;
@@ -64,22 +73,31 @@
     0% {
       background-position: 200% 0;
     }
+
     100% {
       background-position: -200% 0;
     }
   }
 }
 
+/* =========================================
+   GLOBAL BASE STYLES
+========================================= */
+
 @layer base {
   html {
     scroll-behavior: smooth;
+    background-color: #0B0B0A;
   }
 
   body {
+    margin: 0;
+    min-width: 320px;
     font-family: var(--font-sans);
-    color: var(--color-ink);
-    background-color: #faf8f4;
+    color: #F5F0E6;
+    background-color: #0B0B0A;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
@@ -91,71 +109,306 @@
   }
 
   ::selection {
-    background: var(--color-gold-light);
-    color: var(--color-brand-deep);
+    background-color: #D6A83F;
+    color: #0B0B0A;
   }
 
-  :focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 3px;
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* Elegant gradient text */
+/* =========================================
+   CUSTOM TAILWIND UTILITIES
+========================================= */
+
 @utility text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    var(--color-accent),
-    var(--color-gold-light)
-  );
+  background-image: linear-gradient(90deg, #D6A83F, #F0D58A);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Premium navy background */
 @utility surface-brand {
   background-image: linear-gradient(
     135deg,
-    var(--color-brand-deep),
-    var(--color-brand-dark) 55%,
-    var(--color-brand)
+    #0B0B0A,
+    #171613 55%,
+    #0F0F0D
   );
 }
 
-/* Warm ivory background */
 @utility surface-aurora {
   background-image:
     radial-gradient(
       60% 50% at 15% 10%,
-      rgb(197 164 109 / 0.14),
+      rgb(214 168 63 / 0.10),
       transparent
     ),
     radial-gradient(
       50% 50% at 90% 20%,
-      rgb(200 213 223 / 0.35),
+      rgb(201 194 182 / 0.06),
       transparent
     ),
-    linear-gradient(180deg, #f5f0e6, #ffffff);
+    linear-gradient(180deg, #171613, #0B0B0A);
 }
 
-/* Light glass */
 @utility glass {
-  background-color: rgb(255 255 255 / 0.78);
+  background-color: rgb(245 240 230 / 0.08);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  border: 1px solid rgb(255 255 255 / 0.85);
+  border: 1px solid rgb(245 240 230 / 0.12);
 }
 
-/* Dark glass */
 @utility glass-dark {
-  background-color: rgb(23 40 63 / 0.72);
+  background-color: rgb(11 11 10 / 0.78);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  border: 1px solid rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(214 168 63 / 0.18);
 }
 
-/* Respect reduced-motion preferences */
+@utility luxury-card {
+  background-color: #171613;
+  border: 1px solid rgb(214 168 63 / 0.18);
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px -14px rgb(0 0 0 / 0.5);
+}
+
+/* =========================================
+   LUXURY MIRROR-SHINE BUTTONS
+========================================= */
+
+.mirror-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Moving reflection */
+
+.mirror-shine {
+  position: absolute;
+  z-index: 1;
+  top: -60%;
+  left: -75%;
+  width: 45%;
+  height: 220%;
+  pointer-events: none;
+  opacity: 0;
+  transform: rotate(22deg);
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.08) 25%,
+    rgb(255 255 255 / 0.78) 50%,
+    rgb(255 255 255 / 0.12) 75%,
+    transparent 100%
+  );
+
+  transition:
+    left 750ms cubic-bezier(0.2, 0.65, 0.3, 1),
+    opacity 180ms ease;
+}
+
+.mirror-button:hover .mirror-shine,
+.mirror-button:focus-visible .mirror-shine {
+  left: 135%;
+  opacity: 1;
+
+  transition:
+    left 750ms cubic-bezier(0.2, 0.65, 0.3, 1),
+    opacity 100ms ease;
+}
+
+/* Metallic gold button */
+
+.mirror-button-gold {
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+
+  transition:
+    transform 300ms ease,
+    box-shadow 300ms ease,
+    background-position 500ms ease;
+}
+
+.mirror-button-gold:hover {
+  background-position: 100% 50%;
+}
+
+.mirror-button-gold:active {
+  transform: scale(0.98);
+}
+
+/* Reflective glass secondary button */
+
+.mirror-button-outline {
+  background-image: linear-gradient(
+    115deg,
+    rgb(214 168 63 / 0.02),
+    rgb(255 255 255 / 0.07),
+    rgb(214 168 63 / 0.08)
+  );
+
+  transition:
+    border-color 300ms ease,
+    background-color 300ms ease,
+    transform 300ms ease;
+}
+
+.mirror-button-outline:hover {
+  border-color: rgb(214 168 63 / 0.65);
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   ANIMATED BENEFITS STRIP
+========================================= */
+
+.benefits-strip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Gentle gold reflection across the strip */
+
+.benefits-shine {
+  position: absolute;
+  z-index: 0;
+  top: -50%;
+  left: 0;
+  width: 22%;
+  height: 200%;
+  pointer-events: none;
+  opacity: 0;
+
+  transform: translateX(-150%) skewX(-22deg);
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(214 168 63 / 0.025) 25%,
+    rgb(255 248 231 / 0.10) 50%,
+    rgb(214 168 63 / 0.035) 75%,
+    transparent 100%
+  );
+
+  animation: benefits-reflection 7s ease-in-out 1.5s infinite;
+}
+
+@keyframes benefits-reflection {
+  0% {
+    transform: translateX(-150%) skewX(-22deg);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  40% {
+    transform: translateX(550%) skewX(-22deg);
+    opacity: 0.8;
+  }
+
+  48%,
+  100% {
+    transform: translateX(550%) skewX(-22deg);
+    opacity: 0;
+  }
+}
+
+/* =========================================
+   WELCOME SECTION — PREMIUM GOLD DETAILS
+========================================= */
+
+/* Animated champagne-gold heading */
+
+.welcome-gold-text {
+  background-image: linear-gradient(
+    110deg,
+    #9B7A42 0%,
+    #C5A46D 25%,
+    #F0D58A 50%,
+    #B38A45 75%,
+    #9B7A42 100%
+  );
+
+  background-size: 220% auto;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+
+  animation: welcome-gold-shift 8s ease-in-out infinite;
+}
+
+@keyframes welcome-gold-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Subtle highlight behind the promise card */
+
+.welcome-card-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+
+  background: radial-gradient(
+    circle at 85% 10%,
+    rgb(216 188 131 / 0.12),
+    transparent 38%
+  );
+}
+
+/* Moving reflection across the promise card */
+
+.welcome-card-shine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 45%;
+  pointer-events: none;
+  opacity: 0;
+
+  transform: skewX(-20deg);
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.035),
+    rgb(240 213 138 / 0.12),
+    rgb(255 255 255 / 0.035),
+    transparent
+  );
+
+  transition:
+    left 1000ms ease,
+    opacity 300ms ease;
+}
+
+.group:hover .welcome-card-shine {
+  left: 140%;
+  opacity: 1;
+}
+
+/* =========================================
+   ACCESSIBILITY — REDUCED MOTION
+========================================= */
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -167,5 +420,12 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .mirror-shine,
+  .benefits-shine,
+  .welcome-card-shine {
+    display: none;
   }
 }
