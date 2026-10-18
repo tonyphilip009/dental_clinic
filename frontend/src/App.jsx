@@ -12,9 +12,6 @@ import Contact from "./pages/Contact";
 import Booking from "./pages/Booking";
 import CancelAppointment from "./pages/CancelAppointment";
 
-// Day 34 — Three.js test page
-import Test3D from "./pages/Test3D";
-
 import "./App.css";
 
 function App() {
@@ -41,9 +38,6 @@ function App() {
           path="/cancel/:token"
           element={<CancelAppointment />}
         />
-
-        {/* Day 34 — Temporary 3D test page */}
-        <Route path="/3d-test" element={<Test3D />} />
       </Routes>
 
       <Footer />
