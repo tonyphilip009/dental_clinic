@@ -2,9 +2,12 @@
 export const clinic = {
   name: "House of Dental",
   tagline: "Gentle, modern dental care for the whole family.",
-  address: "123 Main Road, Kochi, Kerala 682001",
-  phone: "+91 98765 43210",
-  email: "hello@houseofdental.example",
+
+  // Replace these with the clinic's verified details before publishing.
+  address: "UPDATE WITH REAL CLINIC ADDRESS",
+  phone: "UPDATE WITH REAL PHONE NUMBER",
+  email: "UPDATE WITH REAL EMAIL ADDRESS",
+
   hours: [
     { days: "Monday to Saturday", time: "9:00 AM - 6:00 PM" },
     { days: "Sunday", time: "Closed" },
@@ -19,26 +22,5 @@ export const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encod
   clinic.address
 )}`;
 
-// Placeholder statistics — verify before publishing.
-export const stats = [
-  {
-    value: 10,
-    suffix: "+",
-    label: "Years of Experience",
-  },
-  {
-    value: 2500,
-    suffix: "+",
-    label: "Happy Patients",
-  },
-  {
-    value: 3,
-    suffix: "",
-    label: "Expert Dentists",
-  },
-  {
-    value: 6,
-    suffix: "",
-    label: "Dental Treatments",
-  },
-];
+// Only add statistics after verifying the clinic's actual figures.
+export const stats = [];

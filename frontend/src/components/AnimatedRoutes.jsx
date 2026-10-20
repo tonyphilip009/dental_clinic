@@ -1,6 +1,16 @@
 
+import { Suspense } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Routes, useLocation } from "react-router-dom";
+
+function PageLoader() {
+  return (
+    <div className="page-loader" role="status" aria-label="Loading page">
+      <div className="page-loader__spinner" />
+      <p>Preparing your experience...</p>
+    </div>
+  );
+}
 
 export default function AnimatedRoutes({ children }) {
   const location = useLocation();
@@ -21,9 +31,11 @@ export default function AnimatedRoutes({ children }) {
           ease: "easeOut",
         }}
       >
-        <Routes location={location}>
-          {children}
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes location={location}>
+            {children}
+          </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
