@@ -2,6 +2,8 @@
 from django.db import models
 from django.utils import timezone
 
+from .images import optimize_upload
+
 
 class Service(models.Model):
     name = models.CharField(max_length=100)
@@ -10,39 +12,39 @@ class Service(models.Model):
     icon = models.ImageField(
         upload_to="services/",
         blank=True,
-        null=True
+        null=True,
     )
 
     image = models.ImageField(
         upload_to="services/images/",
         blank=True,
-        null=True
+        null=True,
     )
 
     price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         blank=True,
-        null=True
+        null=True,
     )
 
     # Dynamic treatment details managed through Django Admin.
     benefits = models.JSONField(
         default=list,
         blank=True,
-        help_text='Enter a JSON list, e.g. ["Healthier gums", "Early detection"]'
+        help_text='Enter a JSON list, e.g. ["Healthier gums", "Early detection"]',
     )
 
     treatment_steps = models.JSONField(
         default=list,
         blank=True,
-        help_text='Enter a JSON list of objects with "title" and "description".'
+        help_text='Enter a JSON list of objects with "title" and "description".',
     )
 
     aftercare = models.JSONField(
         default=list,
         blank=True,
-        help_text='Enter a JSON list, e.g. ["Brush twice daily", "Floss daily"]'
+        help_text='Enter a JSON list, e.g. ["Brush twice daily", "Floss daily"]',
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -55,8 +57,16 @@ class Dentist(models.Model):
     name = models.CharField(max_length=100)
     specialization = models.CharField(max_length=150, blank=True)
     bio = models.TextField(blank=True)
-    photo = models.ImageField(upload_to="dentists/", blank=True, null=True)
+    photo = models.ImageField(
+        upload_to="dentists/",
+        blank=True,
+        null=True,
+    )
     years_experience = models.PositiveIntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        optimize_upload(self.photo, max_side=800)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -72,13 +82,21 @@ class Testimonial(models.Model):
     ]
 
     patient_name = models.CharField(max_length=100)
-    rating = models.IntegerField(choices=RATING_CHOICES, default=5)
+    rating = models.IntegerField(
+        choices=RATING_CHOICES,
+        default=5,
+    )
     message = models.TextField()
+
     photo = models.ImageField(
         upload_to="testimonials/",
         blank=True,
-        null=True
+        null=True,
     )
+
+    def save(self, *args, **kwargs):
+        optimize_upload(self.photo, max_side=300)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.patient_name} - {self.rating} Stars"
@@ -88,6 +106,10 @@ class Gallery(models.Model):
     title = models.CharField(max_length=150, blank=True)
     image = models.ImageField(upload_to="gallery/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        optimize_upload(self.image, max_side=1600)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title or f"Gallery Image {self.id}"
@@ -102,7 +124,7 @@ class Appointment(models.Model):
         Service,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
 
     dentist = models.ForeignKey(
@@ -110,22 +132,22 @@ class Appointment(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="appointments"
+        related_name="appointments",
     )
 
     preferred_date = models.DateField(
         null=True,
-        blank=True
+        blank=True,
     )
 
     date = models.DateField(
         null=True,
-        blank=True
+        blank=True,
     )
 
     time_slot = models.TimeField(
         null=True,
-        blank=True
+        blank=True,
     )
 
     status = models.CharField(
@@ -135,17 +157,21 @@ class Appointment(models.Model):
             ("confirmed", "Confirmed"),
             ("cancelled", "Cancelled"),
         ],
-        default="pending"
+        default="pending",
     )
 
     message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     cancel_token_hash = models.CharField(
         max_length=64,
         blank=True,
-        editable=False
+        editable=False,
     )
 
     class Meta:
@@ -155,7 +181,7 @@ class Appointment(models.Model):
                 condition=models.Q(
                     status__in=["pending", "confirmed"]
                 ),
-                name="unique_active_dentist_slot"
+                name="unique_active_dentist_slot",
             )
         ]
 
@@ -189,8 +215,9 @@ class DentistAvailability(models.Model):
     dentist = models.ForeignKey(
         Dentist,
         on_delete=models.CASCADE,
-        related_name="availability"
+        related_name="availability",
     )
+
     day_of_week = models.IntegerField(choices=DAYS_OF_WEEK)
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -204,8 +231,9 @@ class DentistTimeOff(models.Model):
     dentist = models.ForeignKey(
         Dentist,
         on_delete=models.CASCADE,
-        related_name="time_off"
+        related_name="time_off",
     )
+
     date = models.DateField()
     reason = models.CharField(max_length=255, blank=True)
 
