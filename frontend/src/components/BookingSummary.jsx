@@ -1,3 +1,4 @@
+
 import { motion } from "motion/react";
 import { formatDisplayDate, formatTime } from "../utils/dates";
 
@@ -52,24 +53,26 @@ export default function BookingSummary({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="overflow-hidden rounded-2xl border border-accent/25 bg-brand-dark shadow-xl"
+      className="overflow-hidden rounded-2xl border border-[#E7DCC7] bg-white shadow-[0_10px_30px_rgba(70,53,25,0.07)]"
     >
-      <div className="border-b border-accent/20 bg-gradient-to-br from-accent/10 to-transparent p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
+      {/* Summary header */}
+      <div className="border-b border-[#E7DCC7] bg-[#F7F3EA] p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#A97813]">
           House of Dental
         </p>
 
-        <h3 className="mt-2 text-xl font-semibold text-brand-light">
+        <h3 className="mt-2 text-xl font-semibold text-[#29251D]">
           Your appointment
         </h3>
 
-        <p className="mt-1 text-sm text-brand-light/55">
+        <p className="mt-1 text-sm text-[#756B5D]">
           Review your booking details
         </p>
       </div>
 
       <div className="space-y-5 p-5">
-        <div className="space-y-4">
+        {/* Appointment details */}
+        <dl className="space-y-4">
           {appointmentDetails.map(({ label, value, icon }, index) => (
             <motion.div
               key={label}
@@ -81,37 +84,38 @@ export default function BookingSummary({
               }}
               className="flex items-start gap-3"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/5 text-accent">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E7DCC7] bg-[#F7F3EA] text-[#A97813]">
                 <span aria-hidden="true">{icon}</span>
               </div>
 
               <div className="min-w-0 flex-1">
-                <dt className="text-xs uppercase tracking-wider text-brand-light/45">
+                <dt className="text-xs uppercase tracking-wider text-[#938A7C]">
                   {label}
                 </dt>
 
-                <dd className="mt-1 break-words text-sm font-medium text-brand-light">
+                <dd className="mt-1 break-words text-sm font-medium text-[#29251D]">
                   {value || "—"}
                 </dd>
               </div>
             </motion.div>
           ))}
-        </div>
+        </dl>
 
+        {/* Patient information */}
         {patientDetails.length > 0 && (
-          <div className="border-t border-accent/15 pt-5">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+          <div className="border-t border-[#E7DCC7] pt-5">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#A97813]">
               Patient information
             </p>
 
             <dl className="space-y-3">
               {patientDetails.map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs text-brand-light/45">
+                  <dt className="text-xs text-[#938A7C]">
                     {label}
                   </dt>
 
-                  <dd className="mt-1 break-words text-sm text-brand-light/85">
+                  <dd className="mt-1 break-words text-sm text-[#393329]">
                     {value || "—"}
                   </dd>
                 </div>
@@ -120,29 +124,36 @@ export default function BookingSummary({
           </div>
         )}
 
-        {service?.price && (
-          <div className="border-t border-accent/20 pt-5">
-            <p className="text-xs uppercase tracking-wider text-brand-light/45">
+        {/* Treatment price */}
+        {service?.price != null && service.price !== "" && (
+          <div className="border-t border-[#E7DCC7] pt-5">
+            <p className="text-xs uppercase tracking-wider text-[#938A7C]">
               Treatment price
             </p>
 
-            <p className="mt-1 text-2xl font-semibold text-accent">
+            <p className="mt-1 text-2xl font-semibold text-[#A97813]">
               ₹{Number(service.price).toLocaleString("en-IN")}
             </p>
 
-            <p className="mt-2 text-xs leading-5 text-brand-light/50">
-              Starting price only. The final fee will be confirmed at the clinic.
+            <p className="mt-2 text-xs leading-5 text-[#756B5D]">
+              Starting price only. The final fee will be confirmed
+              at the clinic.
             </p>
           </div>
         )}
 
-        <div className="flex items-start gap-2 border-t border-accent/15 pt-4">
-          <span className="mt-0.5 text-accent" aria-hidden="true">
+        {/* Reminder */}
+        <div className="flex items-start gap-2 border-t border-[#E7DCC7] pt-4">
+          <span
+            className="mt-0.5 text-[#A97813]"
+            aria-hidden="true"
+          >
             ✓
           </span>
 
-          <p className="text-xs leading-5 text-brand-light/55">
-            Please review your details before continuing with your appointment.
+          <p className="text-xs leading-5 text-[#756B5D]">
+            Please review your details before continuing with your
+            appointment.
           </p>
         </div>
       </div>

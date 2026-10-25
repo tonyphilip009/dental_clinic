@@ -33,240 +33,28 @@ function getServiceImage(service) {
   return SERVICE_IMAGES[service?.name?.trim().toLowerCase()] || null;
 }
 
-const CHECKUP_DETAILS = {
-  eyebrow: "Preventive dental care",
-  intro:
-    "Keep your smile healthy with a comprehensive examination designed to identify dental concerns early and support long-term oral health.",
-  benefits: [
-    "Assessment of teeth and gum health",
-    "Early identification of potential dental problems",
-    "Personalised oral hygiene recommendations",
-    "Guidance on maintaining a healthy smile",
-  ],
-  steps: [
-    {
-      title: "Dental examination",
-      description:
-        "Your dentist examines your teeth, gums, and overall oral health.",
-    },
-    {
-      title: "Discussion and advice",
-      description:
-        "Discuss your concerns and receive recommendations tailored to your needs.",
-    },
-    {
-      title: "Next steps",
-      description:
-        "Your dentist explains whether preventive care or further assessment may be helpful.",
-    },
-  ],
-  aftercare: [
-    "Brush twice daily using fluoride toothpaste.",
-    "Clean between your teeth every day.",
-    "Follow your dentist's recommended check-up schedule.",
-  ],
-};
+function getTreatmentDetails(service = null) {
+  const cleanTextList = (value) =>
+    Array.isArray(value)
+      ? value.filter((item) => typeof item === "string" && item.trim())
+      : [];
 
-const TREATMENT_DETAILS = {
-  "complete dental check-up": CHECKUP_DETAILS,
-  "complete dental check up": CHECKUP_DETAILS,
+  const benefits = cleanTextList(service?.benefits);
 
-  "teeth cleaning": {
-    eyebrow: "Professional oral hygiene",
-    intro:
-      "Professional teeth cleaning helps remove plaque and hardened deposits that regular brushing may not fully remove, supporting healthier teeth and gums.",
-    benefits: [
-      "Removal of plaque and tartar deposits",
-      "Support for healthier gums",
-      "A cleaner, fresher-feeling mouth",
-      "Personalised advice on daily oral hygiene",
-    ],
-    steps: [
-      {
-        title: "Oral health assessment",
-        description:
-          "Your dentist or hygienist assesses your teeth and gum health.",
-      },
-      {
-        title: "Professional cleaning",
-        description:
-          "Suitable professional instruments are used to remove deposits from your teeth.",
-      },
-      {
-        title: "Finishing advice",
-        description:
-          "Receive guidance on brushing, interdental cleaning, and future maintenance.",
-      },
-    ],
-    aftercare: [
-      "Continue brushing gently twice daily.",
-      "Clean between your teeth every day.",
-      "Follow your dentist's advice if your gums feel sensitive after cleaning.",
-    ],
-  },
+  const steps = Array.isArray(service?.treatment_steps)
+    ? service.treatment_steps.filter(
+        (step) =>
+          step &&
+          typeof step.title === "string" &&
+          step.title.trim() &&
+          typeof step.description === "string" &&
+          step.description.trim()
+      )
+    : [];
 
-  "teeth whitening": {
-    eyebrow: "Smile enhancement",
-    intro:
-      "Professional teeth whitening may help lighten suitable tooth discolouration. Your dentist will assess your teeth and gums and discuss realistic results before treatment.",
-    benefits: [
-      "A treatment plan tailored to your smile",
-      "Assessment of the cause of tooth discolouration",
-      "Professional guidance on suitable whitening options",
-      "Advice on maintaining your results",
-    ],
-    steps: [
-      {
-        title: "Smile assessment",
-        description:
-          "Your dentist checks your oral health and discusses your whitening goals.",
-      },
-      {
-        title: "Personalised treatment plan",
-        description:
-          "Suitable whitening options, expected results, and possible sensitivity are discussed.",
-      },
-      {
-        title: "Aftercare guidance",
-        description:
-          "Receive advice on maintaining your results and managing temporary sensitivity.",
-      },
-    ],
-    aftercare: [
-      "Follow your dentist's instructions for your chosen treatment.",
-      "Avoid excessive use of whitening products.",
-      "Contact your dentist if you experience persistent sensitivity or discomfort.",
-    ],
-  },
+  const aftercare = cleanTextList(service?.aftercare);
 
-  "root canal treatment": {
-    eyebrow: "Restorative dental care",
-    intro:
-      "Root canal treatment may help save a tooth when the soft tissue inside it becomes inflamed or infected. Your dentist will assess the tooth and explain the most appropriate treatment.",
-    benefits: [
-      "May help preserve a natural tooth",
-      "Addresses problems involving the inner tooth tissue",
-      "Aims to relieve symptoms caused by the affected tooth",
-      "Supports restoration of the tooth's function",
-    ],
-    steps: [
-      {
-        title: "Assessment and diagnosis",
-        description:
-          "Your dentist examines the tooth and may recommend appropriate imaging.",
-      },
-      {
-        title: "Treatment",
-        description:
-          "The affected tissue is treated, and the root canal system is cleaned and sealed.",
-      },
-      {
-        title: "Tooth restoration",
-        description:
-          "Your dentist discusses the appropriate restoration and follow-up care.",
-      },
-    ],
-    aftercare: [
-      "Follow the instructions provided by your dentist.",
-      "Avoid chewing hard foods on the treated tooth until your dentist advises it is safe.",
-      "Attend recommended follow-up appointments and complete any planned restoration.",
-    ],
-  },
-};
-
-const DEFAULT_DETAILS = {
-  eyebrow: "Personalised dental care",
-  intro:
-    "Every smile is different. Our dental team will assess your needs, explain suitable treatment options, and help you understand the next steps.",
-  benefits: [
-    "A treatment plan tailored to your needs",
-    "Clear explanations of available options",
-    "Guidance from a dental professional",
-    "Advice on maintaining your oral health",
-  ],
-  steps: [
-    {
-      title: "Consultation",
-      description: "Discuss your concerns and what you would like to achieve.",
-    },
-    {
-      title: "Assessment",
-      description:
-        "Your dentist evaluates your oral health and suitable treatment options.",
-    },
-    {
-      title: "Personalised plan",
-      description:
-        "Review the recommended next steps and arrange treatment if appropriate.",
-    },
-  ],
-  aftercare: [
-    "Follow the advice provided by your dental professional.",
-    "Maintain a consistent daily oral hygiene routine.",
-    "Attend follow-up visits when recommended.",
-  ],
-};
-
-function getTreatmentDetails(name = "", service = null) {
-  const normalized = name.trim().toLowerCase();
-  let fallback = DEFAULT_DETAILS;
-
-  if (TREATMENT_DETAILS[normalized]) {
-    fallback = TREATMENT_DETAILS[normalized];
-  } else if (
-    normalized.includes("check") ||
-    normalized.includes("exam")
-  ) {
-    fallback = CHECKUP_DETAILS;
-  } else if (
-    normalized.includes("clean") ||
-    normalized.includes("scaling")
-  ) {
-    fallback = TREATMENT_DETAILS["teeth cleaning"];
-  } else if (
-    normalized.includes("whiten") ||
-    normalized.includes("bleach")
-  ) {
-    fallback = TREATMENT_DETAILS["teeth whitening"];
-  } else if (normalized.includes("root canal")) {
-    fallback = TREATMENT_DETAILS["root canal treatment"];
-  }
-
-  // Prefer content saved in Django Admin. Keep the existing treatment
-  // copy as a fallback if a field has not been filled in yet.
-  const benefits =
-    Array.isArray(service?.benefits) && service.benefits.length > 0
-      ? service.benefits.filter(
-          (item) => typeof item === "string" && item.trim()
-        )
-      : fallback.benefits;
-
-  const steps =
-    Array.isArray(service?.treatment_steps) &&
-    service.treatment_steps.length > 0
-      ? service.treatment_steps.filter(
-          (step) =>
-            step &&
-            typeof step.title === "string" &&
-            step.title.trim() &&
-            typeof step.description === "string" &&
-            step.description.trim()
-        )
-      : fallback.steps;
-
-  const aftercare =
-    Array.isArray(service?.aftercare) && service.aftercare.length > 0
-      ? service.aftercare.filter(
-          (item) => typeof item === "string" && item.trim()
-        )
-      : fallback.aftercare;
-
-  return {
-    ...fallback,
-    benefits,
-    steps,
-    aftercare,
-  };
+  return { benefits, steps, aftercare };
 }
 
 function SectionHeading({ eyebrow, title, description }) {
@@ -319,7 +107,7 @@ export default function ServiceDetail() {
   } = useFetch(() => getService(id), [id]);
 
   const notFound = error?.response?.status === 404;
-  const details = getTreatmentDetails(service?.name, service);
+  const details = getTreatmentDetails(service);
   const serviceImage = getServiceImage(service);
 
   return (
@@ -381,10 +169,6 @@ export default function ServiceDetail() {
 
               <div className="grid md:grid-cols-[1.2fr_0.8fr]">
                 <div className="p-6 sm:p-10 lg:p-12">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#A67C2E]">
-                    {details.eyebrow}
-                  </p>
-
                   <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#17243A] sm:text-4xl lg:text-5xl">
                     {service.name}
                   </h1>
@@ -491,109 +275,107 @@ export default function ServiceDetail() {
             className="pointer-events-none absolute left-0 top-48 -z-0 h-72 w-72 rounded-full bg-[#D6A83F]/[0.07] blur-3xl"
           />
 
-          <AnimatedSection>
-            <SectionHeading
-              eyebrow="Your treatment"
-              title="Care designed around your smile"
-              description={details.intro}
-            />
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-12" delay={0.05}>
-            <SectionHeading
-              eyebrow="Why it matters"
-              title="Benefits of this treatment"
-              description="Your dentist will explain which benefits are relevant to your individual dental needs."
-            />
-
-            <div className="mt-7 grid gap-4 sm:grid-cols-2">
-              {details.benefits.map((benefit, index) => (
-                <motion.div
-                  key={benefit}
-                  initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    duration: reduceMotion ? 0 : 0.55,
-                    delay: reduceMotion ? 0 : index * 0.08,
-                    ease: EASE,
-                  }}
-                  className="flex gap-4 rounded-2xl border border-[#C69B45]/20 bg-white p-5 shadow-[0_4px_18px_rgba(23,36,58,0.035)] transition-[transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-[#C69B45]/50 hover:shadow-[0_12px_28px_rgba(23,36,58,0.08)]"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F7F1E5] font-semibold text-[#A67C2E]">
-                    ✓
-                  </span>
-
-                  <p className="self-center leading-7 text-[#465163]">
-                    {benefit}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-16 sm:mt-20">
-            <SectionHeading
-              eyebrow="Your visit"
-              title="What to expect"
-              description="Our team will guide you through each stage and explain your options before treatment begins."
-            />
-
-            <div className="mt-8 space-y-4">
-              {details.steps.map((step, index) => (
-                <motion.div
-                  key={step.title}
-                  initial={reduceMotion ? false : { opacity: 0, x: -18 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    duration: reduceMotion ? 0 : 0.6,
-                    delay: reduceMotion ? 0 : index * 0.1,
-                    ease: EASE,
-                  }}
-                  className="flex gap-5 rounded-2xl border border-[#C69B45]/20 bg-white p-5 shadow-[0_4px_18px_rgba(23,36,58,0.035)] sm:p-6"
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#17243A] text-sm font-semibold text-[#E8D3A1]">
-                    0{index + 1}
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-[#17243A]">
-                      {step.title}
-                    </h3>
-
-                    <p className="mt-2 leading-7 text-[#626B78]">
-                      {step.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-16 sm:mt-20">
-            <div className="rounded-3xl border border-[#C69B45]/25 bg-[#F2EBDD] p-6 sm:p-9">
+          {details.benefits.length > 0 && (
+            <AnimatedSection>
               <SectionHeading
-                eyebrow="After your visit"
-                title="Looking after your smile"
-                description="General guidance to help you care for your oral health. Follow any treatment-specific instructions your dentist gives you."
+                eyebrow="Why it matters"
+                title="Benefits of this treatment"
               />
 
-              <ul className="mt-6 space-y-4">
-                {details.aftercare.map((tip) => (
-                  <li
-                    key={tip}
-                    className="flex gap-3 leading-7 text-[#465163]"
+              <div className="mt-7 grid gap-4 sm:grid-cols-2">
+                {details.benefits.map((benefit, index) => (
+                  <motion.div
+                    key={`${benefit}-${index}`}
+                    initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.55,
+                      delay: reduceMotion ? 0 : index * 0.08,
+                      ease: EASE,
+                    }}
+                    className="flex gap-4 rounded-2xl border border-[#C69B45]/20 bg-white p-5 shadow-[0_4px_18px_rgba(23,36,58,0.035)] transition-[transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-[#C69B45]/50 hover:shadow-[0_12px_28px_rgba(23,36,58,0.08)]"
                   >
-                    <span className="mt-0.5 font-semibold text-[#A67C2E]">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F7F1E5] font-semibold text-[#A67C2E]">
                       ✓
                     </span>
-                    <span>{tip}</span>
-                  </li>
+                    <p className="self-center leading-7 text-[#465163]">
+                      {benefit}
+                    </p>
+                  </motion.div>
                 ))}
-              </ul>
-            </div>
-          </AnimatedSection>
+              </div>
+            </AnimatedSection>
+          )}
+
+          {details.steps.length > 0 && (
+            <AnimatedSection className={details.benefits.length > 0 ? "mt-16 sm:mt-20" : ""}>
+              <SectionHeading
+                eyebrow="Your visit"
+                title="What to expect"
+              />
+
+              <div className="mt-8 space-y-4">
+                {details.steps.map((step, index) => (
+                  <motion.div
+                    key={`${step.title}-${index}`}
+                    initial={reduceMotion ? false : { opacity: 0, x: -18 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.6,
+                      delay: reduceMotion ? 0 : index * 0.1,
+                      ease: EASE,
+                    }}
+                    className="flex gap-5 rounded-2xl border border-[#C69B45]/20 bg-white p-5 shadow-[0_4px_18px_rgba(23,36,58,0.035)] sm:p-6"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#17243A] text-sm font-semibold text-[#E8D3A1]">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#17243A]">
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 leading-7 text-[#626B78]">
+                        {step.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </AnimatedSection>
+          )}
+
+          {details.aftercare.length > 0 && (
+            <AnimatedSection
+              className={
+                details.benefits.length > 0 || details.steps.length > 0
+                  ? "mt-16 sm:mt-20"
+                  : ""
+              }
+            >
+              <div className="rounded-3xl border border-[#C69B45]/25 bg-[#F2EBDD] p-6 sm:p-9">
+                <SectionHeading
+                  eyebrow="After your visit"
+                  title="Looking after your smile"
+                />
+
+                <ul className="mt-6 space-y-4">
+                  {details.aftercare.map((tip, index) => (
+                    <li
+                      key={`${tip}-${index}`}
+                      className="flex gap-3 leading-7 text-[#465163]"
+                    >
+                      <span className="mt-0.5 font-semibold text-[#A67C2E]">
+                        ✓
+                      </span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AnimatedSection>
+          )}
 
           <AnimatedSection className="mt-16 sm:mt-20">
             <div className="relative overflow-hidden rounded-3xl bg-[#17243A] px-6 py-10 text-center shadow-[0_16px_45px_rgba(23,36,58,0.16)] sm:px-10 sm:py-14">

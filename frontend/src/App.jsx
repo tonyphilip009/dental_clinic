@@ -1,6 +1,5 @@
-
 import { lazy } from "react";
-import { BrowserRouter, Route } from "react-router-dom";
+import { BrowserRouter, Route, useLocation } from "react-router-dom";
 import { MotionConfig } from "motion/react";
 
 import Navbar from "./components/Navbar";
@@ -17,58 +16,61 @@ import StyleGuide from "./pages/StyleGuide";
 
 import "./App.css";
 
-// Load these pages only when a visitor opens their route.
 const Gallery = lazy(() => import("./pages/Gallery"));
 const Booking = lazy(() => import("./pages/Booking"));
 const CancelAppointment = lazy(
   () => import("./pages/CancelAppointment")
 );
 
-function App() {
+function AppLayout() {
+  const location = useLocation();
+
+  // The confirmation screen needs a separate route or
+  // a confirmation-state signal from Booking.jsx.
+  const isBookingPage = location.pathname === "/booking";
+
+  return (
+    <>
+      {!isBookingPage && <Navbar />}
+
+      <AnimatedRoutes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+
+        <Route path="/services" element={<Services />} />
+        <Route
+          path="/services/:id"
+          element={<ServiceDetail />}
+        />
+
+        <Route path="/gallery" element={<Gallery />} />
+        <Route
+          path="/testimonials"
+          element={<Testimonials />}
+        />
+        <Route path="/contact" element={<Contact />} />
+
+        <Route path="/booking" element={<Booking />} />
+
+        <Route
+          path="/cancel/:token"
+          element={<CancelAppointment />}
+        />
+
+        <Route path="/style-guide" element={<StyleGuide />} />
+      </AnimatedRoutes>
+
+      <Footer />
+    </>
+  );
+}
+
+export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
-        <Navbar />
-
-        <AnimatedRoutes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-
-          <Route path="/services" element={<Services />} />
-          <Route
-            path="/services/:id"
-            element={<ServiceDetail />}
-          />
-
-          <Route path="/gallery" element={<Gallery />} />
-
-          <Route
-            path="/testimonials"
-            element={<Testimonials />}
-          />
-
-          <Route path="/contact" element={<Contact />} />
-
-          {/* Appointment booking */}
-          <Route path="/booking" element={<Booking />} />
-
-          {/* Appointment cancellation */}
-          <Route
-            path="/cancel/:token"
-            element={<CancelAppointment />}
-          />
-
-          {/* Temporary design style guide */}
-          <Route
-            path="/style-guide"
-            element={<StyleGuide />}
-          />
-        </AnimatedRoutes>
-
-        <Footer />
+        <AppLayout />
       </BrowserRouter>
     </MotionConfig>
   );
 }
-
-export default App;

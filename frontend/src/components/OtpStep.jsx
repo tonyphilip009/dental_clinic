@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -21,6 +22,14 @@ function formatCountdown(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function getApiMessage(data, fallback) {
+  if (typeof data?.detail === "string") return data.detail;
+  if (typeof data?.message === "string") return data.message;
+  if (typeof data?.error === "string") return data.error;
+
+  return fallback;
+}
+
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -29,6 +38,18 @@ const cardVariants = {
     transition: { duration: 0.45, ease: "easeOut" },
   },
 };
+
+const cardClass =
+  "w-full overflow-hidden rounded-2xl border border-[#E7DCC7] bg-white shadow-[0_10px_30px_rgba(70,53,25,0.07)]";
+
+const headingClass = "text-[#29251D]";
+
+const mutedTextClass = "text-[#756B5D]";
+
+const goldTextClass = "text-[#A97813]";
+
+const secondaryButtonClass =
+  "rounded-xl border border-[#D8C9A9] bg-white px-5 py-3 text-sm font-medium text-[#393329] transition hover:border-[#D5A637] hover:bg-[#F7F3EA]";
 
 export default function OtpStep({
   service,
@@ -65,17 +86,26 @@ export default function OtpStep({
   const [now, setNow] = useState(Date.now());
 
   const startedRef = useRef(false);
+  const requestInProgressRef = useRef(false);
+  const verifyInProgressRef = useRef(false);
 
-  // Update the countdown once per second.
+  // Update countdowns once per second.
   useEffect(() => {
-    const id = setInterval(() => {
+    const id = window.setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
-    return () => clearInterval(id);
+    return () => window.clearInterval(id);
   }, []);
 
   const requestCode = async (isResend = false) => {
+    // Prevent duplicate requests from repeated clicks or effects.
+    if (requestInProgressRef.current) return;
+
+    if (isResend && Date.now() < resendAt) return;
+
+    requestInProgressRef.current = true;
+
     setError("");
     setNotice("");
 
@@ -90,12 +120,19 @@ export default function OtpStep({
       const result = await sendOtp(email);
       const sentAt = Date.now();
 
+      const expiresIn = Number(result?.expires_in);
+      const resendIn = Number(result?.resend_in);
+
       setExpiresAt(
-        sentAt + result.expires_in * 1000
+        Number.isFinite(expiresIn) && expiresIn > 0
+          ? sentAt + expiresIn * 1000
+          : null
       );
 
       setResendAt(
-        sentAt + result.resend_in * 1000
+        Number.isFinite(resendIn) && resendIn > 0
+          ? sentAt + resendIn * 1000
+          : 0
       );
 
       setCode("");
@@ -107,26 +144,33 @@ export default function OtpStep({
       }
     } catch (err) {
       const data = err.response?.data;
+      const status = err.response?.status;
 
-      if (
-        err.response?.status === 429 &&
-        data?.code === "cooldown"
-      ) {
-        setResendAt(
-          Date.now() + data.retry_after * 1000
+      if (status === 429) {
+        const retryAfter = Number(data?.retry_after);
+
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+          setResendAt(Date.now() + retryAfter * 1000);
+        }
+
+        const message = getApiMessage(
+          data,
+          "Too many verification requests. Please wait before requesting another code."
         );
 
-        setPhase("ready");
-
-        setNotice(
-          "We sent a code to your email a moment ago. Please use that one."
-        );
+        if (isResend) {
+          setError(message);
+        } else if (data?.code === "cooldown") {
+          // A code may already have been sent successfully.
+          setPhase("ready");
+          setNotice(message);
+        } else {
+          setSendError(message);
+          setPhase("failed");
+        }
       } else if (isResend) {
         setError(
-          getErrorMessage(
-            err,
-            "We couldn't send a new code."
-          )
+          getErrorMessage(err, "We couldn't send a new code.")
         );
       } else {
         setSendError(
@@ -139,33 +183,35 @@ export default function OtpStep({
         setPhase("failed");
       }
     } finally {
+      requestInProgressRef.current = false;
       setResending(false);
     }
   };
 
   // Send the first code when this step opens.
-  const startVerification = () => {
-    if (startedRef.current || alreadyVerified) {
-      return;
-    }
+  useEffect(() => {
+    if (startedRef.current || alreadyVerified) return;
 
     startedRef.current = true;
-    requestCode(false);
-  };
+    void requestCode(false);
 
-  useEffect(() => {
-    startVerification();
-
+    // Run once when this step mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
+  const handleVerify = async (event) => {
+    event.preventDefault();
 
-    if (code.length !== CODE_LENGTH) {
+    if (
+      code.length !== CODE_LENGTH ||
+      verifying ||
+      verifyInProgressRef.current ||
+      mustResend
+    ) {
       return;
     }
 
+    verifyInProgressRef.current = true;
     setVerifying(true);
     setError("");
     setNotice("");
@@ -191,10 +237,7 @@ export default function OtpStep({
 
       setCode("");
 
-      if (
-        data?.code === "locked" ||
-        data?.code === "none"
-      ) {
+      if (data?.code === "locked" || data?.code === "none") {
         setLocked(true);
       }
 
@@ -202,6 +245,7 @@ export default function OtpStep({
         setExpiresAt(Date.now());
       }
     } finally {
+      verifyInProgressRef.current = false;
       setVerifying(false);
     }
   };
@@ -214,14 +258,9 @@ export default function OtpStep({
   const expiresLeft =
     expiresAt === null
       ? null
-      : Math.max(
-          0,
-          Math.ceil((expiresAt - now) / 1000)
-        );
+      : Math.max(0, Math.ceil((expiresAt - now) / 1000));
 
-  const expired =
-    expiresAt !== null && expiresLeft === 0;
-
+  const expired = expiresAt !== null && expiresLeft === 0;
   const mustResend = expired || locked;
 
   const summary = (
@@ -236,14 +275,16 @@ export default function OtpStep({
 
   return (
     <motion.div
-      className="mx-auto max-w-xl space-y-6"
+      className="mx-auto w-full max-w-4xl space-y-6"
       initial="hidden"
       animate="visible"
       variants={cardVariants}
     >
-      {summary}
+      {/* Appointment summary */}
+      <div className="w-full">{summary}</div>
 
       <AnimatePresence mode="wait">
+        {/* Sending state */}
         {phase === "sending" && (
           <motion.div
             key="sending"
@@ -251,9 +292,9 @@ export default function OtpStep({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, y: -10 }}
-            className="rounded-2xl border border-accent/20 bg-brand-dark p-6 shadow-xl sm:p-8"
+            className={`${cardClass} p-6 sm:p-8`}
           >
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-accent/30 bg-accent/10">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#E7DCC7] bg-[#F7F3EA]">
               <motion.span
                 animate={{ rotate: 360 }}
                 transition={{
@@ -261,17 +302,18 @@ export default function OtpStep({
                   duration: 2,
                   ease: "linear",
                 }}
-                className="text-2xl text-accent"
+                className="text-2xl text-[#A97813]"
+                aria-hidden="true"
               >
                 ✉
               </motion.span>
             </div>
 
-            <h2 className="text-2xl font-semibold text-brand-light">
+            <h2 className={`text-2xl font-semibold ${headingClass}`}>
               Preparing your verification
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-brand-light/65">
+            <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
               We're sending a secure verification code to your email.
             </p>
 
@@ -281,6 +323,7 @@ export default function OtpStep({
           </motion.div>
         )}
 
+        {/* Failed state */}
         {phase === "failed" && (
           <motion.div
             key="failed"
@@ -288,18 +331,18 @@ export default function OtpStep({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0 }}
-            className="space-y-5 rounded-2xl border border-red-400/20 bg-brand-dark p-6 shadow-xl sm:p-8"
+            className={`${cardClass} space-y-5 p-6 sm:p-8`}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-400/30 bg-red-500/10 text-2xl text-red-300">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-200 bg-red-50 text-2xl text-red-600">
               !
             </div>
 
-            <h2 className="text-2xl font-semibold text-brand-light">
+            <h2 className={`text-2xl font-semibold ${headingClass}`}>
               Verification code not sent
             </h2>
 
-            <p className="text-sm leading-6 text-brand-light/65">
-              We couldn't send your code. Please try again.
+            <p className={`text-sm leading-6 ${mutedTextClass}`}>
+              We couldn't send your code. Please review the message below.
             </p>
 
             <ErrorMessage
@@ -310,13 +353,14 @@ export default function OtpStep({
             <button
               type="button"
               onClick={onBack}
-              className="w-full rounded-xl border border-accent/40 px-5 py-3 font-medium text-brand-light transition hover:bg-accent/10"
+              className={secondaryButtonClass}
             >
               ← Edit my details
             </button>
           </motion.div>
         )}
 
+        {/* Verification form */}
         {phase === "ready" && (
           <motion.form
             key="ready"
@@ -325,52 +369,54 @@ export default function OtpStep({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, y: -10 }}
-            className="overflow-hidden rounded-2xl border border-accent/25 bg-brand-dark shadow-2xl"
+            className={cardClass}
           >
-            <div className="border-b border-accent/15 bg-gradient-to-br from-accent/10 to-transparent p-6 sm:p-8">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-accent/40 bg-accent/10 text-2xl">
+            {/* Verification header */}
+            <div className="border-b border-[#E7DCC7] bg-[#F7F3EA] p-6 sm:p-8">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#D8C9A9] bg-white text-2xl text-[#A97813]">
                 <span aria-hidden="true">✉</span>
               </div>
 
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+              <p
+                className={`mt-5 text-xs font-semibold uppercase tracking-[0.25em] ${goldTextClass}`}
+              >
                 Email verification
               </p>
 
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-brand-light">
+              <h2
+                className={`mt-2 text-3xl font-semibold tracking-tight ${headingClass}`}
+              >
                 One last security check
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-brand-light/70">
+              <p className={`mt-3 text-sm leading-6 ${mutedTextClass}`}>
                 Enter the six-digit code we sent to your email address.
               </p>
 
-              <p className="mt-3 break-all rounded-xl border border-accent/20 bg-black/20 px-4 py-3 text-sm font-medium text-brand-light">
+              <p className="mt-3 break-all rounded-xl border border-[#E7DCC7] bg-white px-4 py-3 text-sm font-medium text-[#393329]">
                 {email}
               </p>
             </div>
 
-            <div className="space-y-5 p-6 sm:p-8">
+            {/* Verification fields */}
+            <div className="space-y-5 bg-white p-6 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label
                   htmlFor="otp-code"
-                  className="text-sm font-medium text-brand-light/85"
+                  className="text-sm font-medium text-[#393329]"
                 >
                   Verification code
                 </label>
 
                 {expiresLeft !== null && !expired && (
-                  <span className="rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-xs font-medium tabular-nums text-accent">
+                  <span className="rounded-full border border-[#E7DCC7] bg-[#F7F3EA] px-3 py-1 text-xs font-medium tabular-nums text-[#A97813]">
                     Expires in {formatCountdown(expiresLeft)}
                   </span>
                 )}
               </div>
 
               <motion.div
-                animate={
-                  error
-                    ? { x: [0, -5, 5, -4, 4, 0] }
-                    : { x: 0 }
-                }
+                animate={error ? { x: [0, -5, 5, -4, 4, 0] } : { x: 0 }}
                 transition={{ duration: 0.35 }}
               >
                 <input
@@ -382,21 +428,19 @@ export default function OtpStep({
                   placeholder="••••••"
                   value={code}
                   disabled={mustResend || verifying}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setCode(
-                      e.target.value
+                      event.target.value
                         .replace(/\D/g, "")
                         .slice(0, CODE_LENGTH)
                     )
                   }
-                  aria-describedby={
-                    error ? "otp-error" : undefined
-                  }
-                  className="w-full rounded-xl border border-accent/30 bg-black/25 px-3 py-4 text-center text-2xl font-semibold tracking-[0.45em] text-brand-light outline-none transition placeholder:text-brand-light/25 focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50 sm:text-3xl sm:tracking-[0.7em]"
+                  aria-describedby={error ? "otp-error" : undefined}
+                  className="w-full rounded-xl border border-[#D8C9A9] bg-white px-3 py-4 text-center text-2xl font-semibold tracking-[0.45em] text-[#29251D] outline-none transition placeholder:text-[#C2B8A6] focus:border-[#D5A637] focus:ring-2 focus:ring-[#D5A637]/20 disabled:cursor-not-allowed disabled:bg-[#F7F3EA] disabled:opacity-60 sm:text-3xl sm:tracking-[0.7em]"
                 />
               </motion.div>
 
-              <div className="flex items-center justify-between text-xs text-brand-light/45">
+              <div className="flex items-center justify-between text-xs text-[#938A7C]">
                 <span>6 digits required</span>
                 <span className="tabular-nums">
                   {code.length}/{CODE_LENGTH}
@@ -407,7 +451,7 @@ export default function OtpStep({
                 <motion.p
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-300"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                   role="alert"
                 >
                   Your code has expired. Please request a new one.
@@ -418,16 +462,18 @@ export default function OtpStep({
                 <motion.p
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-300"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                   role="alert"
                 >
-                  Verification is locked or the code is no longer available. Request a new code to continue.
+                  Verification is locked or the code is no longer available.
+                  Request a new code to continue.
                 </motion.p>
               )}
 
               {import.meta.env.DEV && (
-                <p className="rounded-xl border border-accent/15 bg-accent/5 p-3 text-xs leading-5 text-brand-light/55">
-                  Development mode: the code is printed in the terminal where Django is running.
+                <p className="rounded-xl border border-[#E7DCC7] bg-[#F7F3EA] p-3 text-xs leading-5 text-[#756B5D]">
+                  Development mode: the code is printed in the terminal where
+                  Django is running.
                 </p>
               )}
 
@@ -439,7 +485,7 @@ export default function OtpStep({
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-300"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                   >
                     {error}
                   </motion.p>
@@ -451,7 +497,7 @@ export default function OtpStep({
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-200"
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
                   >
                     {notice}
                   </motion.p>
@@ -465,7 +511,7 @@ export default function OtpStep({
                   mustResend ||
                   verifying
                 }
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-brand-dark shadow-lg shadow-accent/10 transition duration-300 hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-accent/20 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D5A637] px-6 py-3.5 font-semibold text-[#29251D] shadow-lg shadow-[#D5A637]/15 transition duration-300 hover:-translate-y-0.5 hover:bg-[#E4BC58] hover:shadow-[#D5A637]/20 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {verifying ? (
                   <>
@@ -490,11 +536,11 @@ export default function OtpStep({
                 )}
               </button>
 
-              <div className="flex flex-col items-center justify-between gap-4 border-t border-accent/15 pt-5 sm:flex-row">
+              <div className="flex flex-col items-center justify-between gap-4 border-t border-[#E7DCC7] pt-5 sm:flex-row">
                 <button
                   type="button"
                   onClick={onBack}
-                  className="text-sm font-medium text-brand-light/65 transition hover:text-accent"
+                  className="text-sm font-medium text-[#756B5D] transition hover:text-[#A97813]"
                 >
                   ← Edit my details
                 </button>
@@ -503,7 +549,7 @@ export default function OtpStep({
                   type="button"
                   onClick={() => requestCode(true)}
                   disabled={resendLeft > 0 || resending}
-                  className="text-sm font-medium text-accent transition hover:text-gold-light disabled:cursor-not-allowed disabled:text-brand-light/35"
+                  className="text-sm font-medium text-[#A97813] transition hover:text-[#805A0D] disabled:cursor-not-allowed disabled:text-[#BDB4A6]"
                 >
                   {resending
                     ? "Sending new code..."
@@ -516,6 +562,7 @@ export default function OtpStep({
           </motion.form>
         )}
 
+        {/* Verification successful */}
         {phase === "done" && (
           <motion.div
             key="done"
@@ -523,37 +570,41 @@ export default function OtpStep({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0 }}
-            className="overflow-hidden rounded-2xl border border-accent/25 bg-brand-dark text-center shadow-2xl"
+            className={`${cardClass} text-center`}
           >
-            <div className="bg-gradient-to-b from-accent/10 to-transparent px-6 pb-8 pt-8 sm:px-8">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-accent/30 bg-accent/10">
+            <div className="bg-gradient-to-b from-[#F7F3EA] to-white px-6 pb-8 pt-8 sm:px-8">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-[#E7DCC7] bg-[#F7F3EA]">
                 <AnimatedCheck />
               </div>
 
-              <p className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+              <p
+                className={`mt-6 text-xs font-semibold uppercase tracking-[0.25em] ${goldTextClass}`}
+              >
                 Verification complete
               </p>
 
-              <h2 className="mt-3 text-3xl font-semibold text-brand-light">
+              <h2 className={`mt-3 text-3xl font-semibold ${headingClass}`}>
                 Email verified
               </h2>
 
-              <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-brand-light/65">
+              <p
+                className={`mx-auto mt-3 max-w-sm text-sm leading-6 ${mutedTextClass}`}
+              >
                 Thank you. Your email address has been confirmed successfully.
               </p>
 
-              <div className="mx-auto mt-5 max-w-sm break-all rounded-xl border border-accent/20 bg-black/20 px-4 py-3 text-sm text-brand-light/85">
+              <div className="mx-auto mt-5 max-w-sm break-all rounded-xl border border-[#E7DCC7] bg-white px-4 py-3 text-sm text-[#393329]">
                 {email}
               </div>
 
-              <p className="mt-5 text-sm text-brand-light/55">
+              <p className={`mt-5 text-sm ${mutedTextClass}`}>
                 You're ready for the next step: creating your appointment.
               </p>
 
               <button
                 type="button"
                 onClick={onBack}
-                className="mt-6 rounded-xl border border-accent/35 px-5 py-3 text-sm font-medium text-brand-light transition hover:bg-accent/10 hover:text-accent"
+                className={`mt-6 ${secondaryButtonClass}`}
               >
                 ← Edit my details
               </button>

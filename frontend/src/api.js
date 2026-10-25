@@ -1,3 +1,4 @@
+
 import axios from "axios";
 
 const api = axios.create({
@@ -7,26 +8,30 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// DRF returns either a plain list or { results: [...] } when paginated
+// DRF returns either a plain list or { results: [...] } when paginated.
 const unwrapList = (data) =>
   Array.isArray(data) ? data : data.results ?? [];
 
+// Services
 export const getServices = () =>
   api.get("/services/").then((res) => unwrapList(res.data));
 
 export const getService = (id) =>
   api.get(`/services/${id}/`).then((res) => res.data);
 
+// Dentists
 export const getDentists = () =>
   api.get("/dentists/").then((res) => unwrapList(res.data));
 
+// Testimonials
 export const getTestimonials = () =>
   api.get("/testimonials/").then((res) => unwrapList(res.data));
 
+// Gallery
 export const getGallery = () =>
   api.get("/gallery/").then((res) => unwrapList(res.data));
 
-// Used by the booking flow (Days 25-30)
+// Booking availability
 export const getAvailability = (dentistId, date) =>
   api
     .get("/availability/", {
@@ -37,10 +42,21 @@ export const getAvailability = (dentistId, date) =>
     })
     .then((res) => res.data.available_slots);
 
+// Available calendar dates for the selected dentist
+export const getAvailableDates = (dentistId) =>
+  api
+    .get("/availability/dates/", {
+      params: {
+        dentist: dentistId,
+      },
+    })
+    .then((res) => res.data.available_dates);
+
+// Create appointment
 export const createAppointment = (payload) =>
   api.post("/appointments/", payload).then((res) => res.data);
 
-// Day 29 — Email OTP
+// Email OTP
 export const sendOtp = (email) =>
   api.post("/otp/send/", { email }).then((res) => res.data);
 
@@ -52,20 +68,18 @@ export const verifyOtp = (email, code) =>
     })
     .then((res) => res.data);
 
-// Day 32 — Appointment cancellation
-// Fetch appointment details using the private cancellation token.
+// Appointment cancellation
 export const getCancellation = (token) =>
   api
     .get(`/appointments/cancel/${encodeURIComponent(token)}/`)
     .then((res) => res.data);
 
-// Cancel an appointment using the private cancellation token.
 export const cancelAppointment = (token) =>
   api
     .post(`/appointments/cancel/${encodeURIComponent(token)}/`)
     .then((res) => res.data);
 
-// Turns any Axios error into a message that is safe to show a patient
+// Safe error messages for patients
 export function getErrorMessage(
   err,
   fallback = "Something went wrong. Please try again."
@@ -77,7 +91,6 @@ export function getErrorMessage(
   const data = err.response.data;
 
   if (data && typeof data === "object") {
-    // API errors, including cancellation errors
     if (typeof data.error === "string") {
       return data.error;
     }

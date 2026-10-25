@@ -1,3 +1,4 @@
+
 import hashlib
 import hmac
 import math
@@ -17,7 +18,14 @@ OTP_LIFETIME = timedelta(minutes=5)
 VERIFICATION_LIFETIME = timedelta(minutes=15)
 RESEND_COOLDOWN = timedelta(seconds=60)
 MAX_ATTEMPTS = 5
-MAX_SENDS_PER_HOUR = 5
+
+# Maximum OTP requests per email within a rolling one-hour window.
+# Can be overridden through OTP_MAX_SENDS_PER_HOUR in settings.py.
+MAX_SENDS_PER_HOUR = getattr(
+    settings,
+    "OTP_MAX_SENDS_PER_HOUR",
+    10,
+)
 
 
 class OTPError(Exception):
@@ -40,11 +48,13 @@ def _hash(value, purpose):
 def send_otp(email):
     now = timezone.now()
 
-    # 1. Resend cooldown
-    latest = EmailOTP.objects.filter(email=email).first()
+    # 1. Enforce resend cooldown.
+    latest = EmailOTP.objects.filter(email__iexact=email).first()
 
     if latest:
-        wait = (latest.created_at + RESEND_COOLDOWN - now).total_seconds()
+        wait = (
+            latest.created_at + RESEND_COOLDOWN - now
+        ).total_seconds()
 
         if wait > 0:
             seconds = math.ceil(wait)
@@ -56,34 +66,35 @@ def send_otp(email):
                 retry_after=seconds,
             )
 
-    # 2. Hourly limit per email address
+    # 2. Enforce the hourly limit per email.
     sent_last_hour = EmailOTP.objects.filter(
-        email=email,
+        email__iexact=email,
         created_at__gte=now - timedelta(hours=1),
     ).count()
 
     if sent_last_hour >= MAX_SENDS_PER_HOUR:
         raise OTPError(
             "Too many codes have been requested for this email. "
-            "Please try again in an hour.",
+            "Please try again later.",
             status=429,
             code="limit",
             retry_after=3600,
         )
 
-    # 3. Create the code and store only its hash
+    # 3. Generate a secure six-digit code.
     code = "".join(
         secrets.choice("0123456789")
         for _ in range(OTP_LENGTH)
     )
 
+    # Store only the hash of the OTP.
     otp = EmailOTP.objects.create(
         email=email,
         code_hash=_hash(f"{email}:{code}", "code"),
         expires_at=now + OTP_LIFETIME,
     )
 
-    # 4. Email it
+    # 4. Send the code by email.
     minutes = int(OTP_LIFETIME.total_seconds() // 60)
 
     try:
@@ -102,6 +113,7 @@ def send_otp(email):
         )
 
     except Exception:
+        # Remove the record if the email could not be sent.
         otp.delete()
 
         raise OTPError(
@@ -119,8 +131,8 @@ def send_otp(email):
 def verify_otp(email, code):
     now = timezone.now()
 
-    # Newest code only
-    otp = EmailOTP.objects.filter(email=email).first()
+    # Only the newest OTP is valid.
+    otp = EmailOTP.objects.filter(email__iexact=email).first()
 
     if otp is None or otp.verified_at is not None:
         raise OTPError(
@@ -162,7 +174,7 @@ def verify_otp(email, code):
             attempts_left=left,
         )
 
-    # Correct: mark verified and hand back a one-time token for Day 30
+    # Correct code: create a one-time verification token.
     token = secrets.token_urlsafe(32)
 
     otp.verified_at = now
@@ -177,7 +189,7 @@ def verify_otp(email, code):
 
 def _verification_queryset(email, token):
     return EmailOTP.objects.filter(
-        email=email,
+        email__iexact=email,
         token_hash=_hash(token, "token"),
         verified_at__isnull=False,
         consumed_at__isnull=True,
@@ -186,13 +198,20 @@ def _verification_queryset(email, token):
 
 
 def has_valid_verification(email, token):
-    """True if this token proves a recent, unused verification for this email."""
-    return bool(token) and _verification_queryset(email, token).exists()
+    """True if this token proves a recent, unused verification."""
+    return (
+        bool(token)
+        and _verification_queryset(email, token).exists()
+    )
 
 
 def consume_verification(email, token):
-    """Mark a verification as used. Call this inside transaction.atomic()."""
-    otp = _verification_queryset(email, token).select_for_update().first()
+    """Mark a verification as used inside transaction.atomic()."""
+    otp = (
+        _verification_queryset(email, token)
+        .select_for_update()
+        .first()
+    )
 
     if otp is None:
         raise OTPError(
