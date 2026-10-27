@@ -2,27 +2,41 @@
 from pathlib import Path
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 
-# Build paths inside the project
+# =========================================================
+# Paths and environment variables
+# =========================================================
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
 
+# =========================================================
 # Security
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-j%-b5*i2^%9v^%9v^%9v^%9v^%9v^%9v^%9v^%9v",
-)
+# =========================================================
 
-DEBUG = True
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1",
+    ).split(",")
+    if host.strip()
+]
 
 
-# Application definition
+# =========================================================
+# Applications
+# =========================================================
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -37,9 +51,13 @@ INSTALLED_APPS = [
 ]
 
 
+# =========================================================
 # Middleware
+# =========================================================
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -52,6 +70,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "clinic.urls"
 
+WSGI_APPLICATION = "clinic.wsgi.application"
+
+
+# =========================================================
+# Templates
+# =========================================================
 
 TEMPLATES = [
     {
@@ -69,36 +93,71 @@ TEMPLATES = [
 ]
 
 
-WSGI_APPLICATION = "clinic.wsgi.application"
-
-
+# =========================================================
 # Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# =========================================================
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
+# =========================================================
 # Password validation
+# =========================================================
+
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
+        ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "MinimumLengthValidator"
+        ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "CommonPasswordValidator"
+        ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "CommonPasswordValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "NumericPasswordValidator"
+        ),
     },
 ]
 
 
+# =========================================================
 # Internationalization
+# =========================================================
+
 LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "Asia/Kolkata"
@@ -108,16 +167,34 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files and media
-STATIC_URL = "static/"
+# =========================================================
+# Static and media files
+# =========================================================
+
+STATIC_URL = "/static/"
+
+# Required by collectstatic on Render.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
+
 MEDIA_ROOT = BASE_DIR / "media"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 
+
+# =========================================================
 # Email configuration
-# Emails are printed in the terminal until real credentials
-# are provided in .env.
+# =========================================================
 
 if os.environ.get("EMAIL_HOST_USER"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -130,35 +207,54 @@ if os.environ.get("EMAIL_HOST_USER"):
     DEFAULT_FROM_EMAIL = f"House of Dental <{EMAIL_HOST_USER}>"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    DEFAULT_FROM_EMAIL = (
-        "House of Dental <no-reply@houseofdental.example>"
-    )
+    DEFAULT_FROM_EMAIL = "House of Dental <no-reply@houseofdental.example>"
 
 
-# Clinic details used in emails
-# Replace these placeholders with verified clinic details before publishing.
+# =========================================================
+# Clinic details
+# =========================================================
+
 CLINIC_NAME = "House of Dental"
-CLINIC_ADDRESS = "UPDATE WITH REAL CLINIC ADDRESS"
-CLINIC_PHONE = "UPDATE WITH REAL PHONE NUMBER"
-CLINIC_EMAIL = "UPDATE WITH REAL EMAIL ADDRESS"
+
+CLINIC_ADDRESS = os.environ.get(
+    "CLINIC_ADDRESS",
+    "UPDATE WITH REAL CLINIC ADDRESS",
+)
+
+CLINIC_PHONE = os.environ.get(
+    "CLINIC_PHONE",
+    "UPDATE WITH REAL PHONE NUMBER",
+)
+
+CLINIC_EMAIL = os.environ.get(
+    "CLINIC_EMAIL",
+    "UPDATE WITH REAL EMAIL ADDRESS",
+)
+
 CLINIC_HOURS = (
     "Monday to Saturday: 9:00 AM - 6:00 PM\n"
     "Sunday: Closed"
 )
 
 
-# Appointment cancellation settings
+# =========================================================
+# Appointment settings
+# =========================================================
+
 FRONTEND_URL = os.environ.get(
     "FRONTEND_URL",
     "http://localhost:5173",
 )
 
-# Zero means cancellation is allowed until the appointment starts.
-# Set to 24 if patients must cancel at least 24 hours in advance.
-CANCELLATION_MIN_NOTICE_HOURS = 0
+CANCELLATION_MIN_NOTICE_HOURS = int(
+    os.environ.get("CANCELLATION_MIN_NOTICE_HOURS", "0")
+)
 
 
+# =========================================================
 # Django REST Framework
+# =========================================================
+
 REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "otp_send": "20/hour",
@@ -168,12 +264,53 @@ REST_FRAMEWORK = {
 }
 
 
-# CORS configuration
+# =========================================================
+# CORS
+# =========================================================
+
+_default_cors_origins = (
+    "http://localhost:3000,"
+    "http://127.0.0.1:3000,"
+    "http://localhost:5173,"
+    "http://127.0.0.1:5173,"
+    "http://localhost:4173,"
+    "http://127.0.0.1:4173"
+)
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:4173",
-    "http://127.0.0.1:4173",
+    origin.strip().rstrip("/")
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        _default_cors_origins,
+    ).split(",")
+    if origin.strip()
 ]
+
+
+# =========================================================
+# Production security
+# =========================================================
+
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
+
+    SECURE_SSL_REDIRECT = (
+        os.environ.get("SECURE_SSL_REDIRECT", "True").lower()
+        == "true"
+    )
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    SECURE_HSTS_SECONDS = int(
+        os.environ.get("SECURE_HSTS_SECONDS", "0")
+    )
+
+
+# =========================================================
+# Default primary key
+# =========================================================
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
