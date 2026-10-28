@@ -48,13 +48,13 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 
 class DentistSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Dentist
         fields = "__all__"
 
-    def get_image(self, obj):
+    def get_photo(self, obj):
         cloudinary_images = {
             "WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
@@ -66,10 +66,10 @@ class DentistSerializer(serializers.ModelSerializer):
             ),
         }
 
-        if not obj.image:
+        if not obj.photo:
             return None
 
-        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
+        filename = obj.photo.name.replace("\\", "/").rsplit("/", 1)[-1]
         return cloudinary_images.get(filename)
 
 
