@@ -4,8 +4,8 @@ import axios from "axios";
 const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_BASE_URL ||
-    "http://127.0.0.1:8000/api",
-  timeout: 10000,
+    "https://house-of-dental-api.onrender.com/api",
+  timeout: 15000,
 });
 
 // DRF returns either a plain list or { results: [...] } when paginated.
