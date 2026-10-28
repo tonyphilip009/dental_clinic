@@ -9,7 +9,6 @@ from PIL import Image, ImageOps
 def optimize_upload(field_file, max_side, quality=80):
     """
     Resize a newly uploaded image and convert it to WebP.
-
     Already-saved files are not processed again.
     Small images are never enlarged.
     """
