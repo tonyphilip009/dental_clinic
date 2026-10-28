@@ -1,46 +1,25 @@
-import os
 
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Reset an existing staff user's password."
+    help = "List production staff usernames without changing accounts."
 
     def handle(self, *args, **options):
-        username = os.environ.get("ADMIN_USERNAME")
-        new_password = os.environ.get("ADMIN_NEW_PASSWORD")
-
-        if not username or not new_password:
-            raise CommandError(
-                "Set ADMIN_USERNAME and ADMIN_NEW_PASSWORD "
-                "in the environment."
-            )
-
-        if len(new_password) < 12:
-            raise CommandError(
-                "The new password must be at least 12 characters."
-            )
-
         User = get_user_model()
 
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise CommandError(
-                f"User '{username}' was not found in this database."
-            )
+        staff_users = User.objects.filter(is_staff=True).order_by("username")
 
-        if not user.is_staff:
-            raise CommandError(
-                "The selected user is not a staff account."
-            )
+        if not staff_users.exists():
+            self.stdout.write("No staff accounts found in this database.")
+            return
 
-        user.set_password(new_password)
-        user.save(update_fields=["password"])
+        self.stdout.write("Production staff accounts:")
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Password reset successfully for '{username}'."
+        for user in staff_users:
+            self.stdout.write(
+                f"Username: {user.username} | "
+                f"Staff: {user.is_staff} | "
+                f"Superuser: {user.is_superuser}"
             )
-        )
