@@ -30,11 +30,11 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         cloudinary_images = {
-            "services/images/complete-dental-checkup.png": (
+            "complete-dental-checkup.png": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119641/complete-dental-checkup.png"
             ),
-            "services/images/teeth-cleaning.png": (
+            "teeth-cleaning.png": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119646/teeth-cleaning.png"
             ),
@@ -43,12 +43,8 @@ class ServiceSerializer(serializers.ModelSerializer):
         if not obj.image:
             return None
 
-        image_name = obj.image.name
-
-        if image_name in cloudinary_images:
-            return cloudinary_images[image_name]
-
-        return obj.image.url
+        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
+        return cloudinary_images.get(filename)
 
 
 class DentistSerializer(serializers.ModelSerializer):
@@ -60,11 +56,11 @@ class DentistSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         cloudinary_images = {
-            "dentists/WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp": (
+            "WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119366/WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp"
             ),
-            "dentists/WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp": (
+            "WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119587/WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp"
             ),
@@ -73,12 +69,8 @@ class DentistSerializer(serializers.ModelSerializer):
         if not obj.image:
             return None
 
-        image_name = obj.image.name
-
-        if image_name in cloudinary_images:
-            return cloudinary_images[image_name]
-
-        return obj.image.url
+        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
+        return cloudinary_images.get(filename)
 
 
 class TestimonialSerializer(serializers.ModelSerializer):
@@ -96,15 +88,15 @@ class GallerySerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         cloudinary_images = {
-            "gallery/Modern_Dental_Care_in_Action.webp": (
+            "Modern_Dental_Care_in_Action.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119608/Modern_Dental_Care_in_Action.webp"
             ),
-            "gallery/Modern_Dental_Suite_with_Panoramic_X-ray.webp": (
+            "Modern_Dental_Suite_with_Panoramic_X-ray.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119625/Modern_Dental_Suite_with_Panoramic_X-ray.webp"
             ),
-            "gallery/Luxurious_House_of_Dental_Reception.webp": (
+            "Luxurious_House_of_Dental_Reception.webp": (
                 "https://res.cloudinary.com/zzwvvvp2/image/upload/"
                 "v1793119601/Luxurious_House_of_Dental_Reception.webp"
             ),
@@ -113,12 +105,8 @@ class GallerySerializer(serializers.ModelSerializer):
         if not obj.image:
             return None
 
-        image_name = obj.image.name
-
-        if image_name in cloudinary_images:
-            return cloudinary_images[image_name]
-
-        return obj.image.url
+        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
+        return cloudinary_images.get(filename)
 
 
 NAME_PATTERN = re.compile(
@@ -296,8 +284,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
         validated_data.pop("verification_token", None)
         return super().create(validated_data)
 
-
-# Email OTP Serializers
 
 class OTPSendSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
