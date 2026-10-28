@@ -11,12 +11,12 @@ const benefits = [
 function AnimatedTooth() {
   return (
     <span
-      className="tooth-float relative inline-flex items-center justify-center"
+      className="tooth-float relative inline-flex shrink-0 items-center justify-center"
       aria-hidden="true"
     >
       <svg
         viewBox="0 0 64 72"
-        className="h-10 w-10 tooth-glow"
+        className="tooth-glow h-10 w-10"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -39,7 +39,6 @@ function AnimatedTooth() {
       <span className="tooth-sparkle absolute -right-1 top-0 text-sm text-[#D6A83F]">
         ✦
       </span>
-
       <span className="tooth-sparkle-delayed absolute -bottom-1 -left-1 text-xs text-[#F0D58A]">
         ✧
       </span>
@@ -63,12 +62,8 @@ function AnimatedTooth() {
         }
 
         @keyframes dental-tooth-float {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-10px) rotate(3deg);
-          }
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(3deg); }
         }
 
         @keyframes dental-tooth-glow {
@@ -108,18 +103,17 @@ export default function Hero() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="relative isolate min-h-[700px] overflow-hidden bg-[#090908] text-[#F5F0E6] sm:min-h-[820px] lg:min-h-[850px]">
-      {/* Background smile image */}
+    <section className="relative isolate min-h-[760px] overflow-hidden bg-[#090908] text-[#F5F0E6] sm:min-h-[820px] lg:min-h-[850px]">
+      {/* Background image: independently sized for mobile */}
       <div
-        className="absolute inset-0 -z-30 bg-no-repeat bg-[length:auto_100%] sm:bg-cover"
+        className="hero-smile-background absolute inset-0 -z-30"
         style={{
           backgroundImage: "url('/dental-smile-hero.png')",
-          backgroundPosition: "70% center",
         }}
         aria-hidden="true"
       />
 
-      {/* Background overlay */}
+      {/* Dark gradient overlay */}
       <div
         className="absolute inset-0 -z-20 bg-gradient-to-r from-[#090908] from-[0%] via-[#090908]/90 via-[30%] via-[#090908]/35 via-[55%] to-transparent"
         aria-hidden="true"
@@ -131,26 +125,26 @@ export default function Hero() {
         aria-hidden="true"
       />
 
-      {/* Main hero content */}
-      <div className="mx-auto flex min-h-[700px] max-w-7xl flex-col justify-between px-5 pb-7 pt-32 sm:min-h-[820px] sm:px-8 sm:pb-8 sm:pt-36 lg:min-h-[850px] lg:px-12 lg:pt-40">
+      {/* Hero content */}
+      <div className="mx-auto flex min-h-[760px] max-w-7xl flex-col justify-between px-5 pb-7 pt-28 sm:min-h-[820px] sm:px-8 sm:pb-8 sm:pt-36 lg:min-h-[850px] lg:px-12 lg:pt-40">
         <div className="max-w-2xl">
           {/* Welcome label */}
           <motion.div
-            className="mb-7 flex items-center gap-4"
+            className="mb-6 flex items-center gap-3 sm:mb-7 sm:gap-4"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
             <AnimatedTooth />
 
-            <span className="text-xs font-semibold uppercase tracking-[0.24em] text-[#D6A83F] sm:text-sm">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#D6A83F] sm:text-sm sm:tracking-[0.24em]">
               Welcome to House of Dental
             </span>
           </motion.div>
 
           {/* Headline */}
           <motion.h1
-            className="max-w-[620px] text-5xl font-medium leading-[1.02] tracking-[-0.045em] text-[#F5F0E6] sm:text-6xl lg:text-[76px]"
+            className="max-w-[620px] text-[42px] font-medium leading-[1.03] tracking-[-0.045em] text-[#F5F0E6] min-[380px]:text-5xl sm:text-6xl lg:text-[76px]"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
@@ -166,7 +160,7 @@ export default function Hero() {
 
           {/* Description */}
           <motion.p
-            className="mt-7 max-w-[440px] text-sm leading-7 text-[#E4DED2] sm:text-base"
+            className="mt-5 max-w-[440px] text-sm leading-6 text-[#E4DED2] sm:mt-7 sm:text-base sm:leading-7"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25 }}
@@ -178,14 +172,14 @@ export default function Hero() {
 
           {/* Action buttons */}
           <motion.div
-            className="mt-7 flex flex-wrap items-center gap-4"
+            className="mt-6 flex flex-col items-stretch gap-3 min-[430px]:flex-row min-[430px]:flex-wrap min-[430px]:items-center sm:mt-7 sm:gap-4"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35 }}
           >
             <Link
               to="/booking"
-              className="mirror-button mirror-button-gold group relative inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-xl border border-[#E6BD58] bg-gradient-to-r from-[#C99B32] via-[#F0D58A] to-[#D6A83F] px-6 py-3 text-sm font-semibold text-[#090908] shadow-[0_4px_18px_rgba(214,168,63,0.2)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(214,168,63,0.32)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F0D58A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090908]"
+              className="mirror-button mirror-button-gold group relative inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-xl border border-[#E6BD58] bg-gradient-to-r from-[#C99B32] via-[#F0D58A] to-[#D6A83F] px-5 py-3 text-sm font-semibold text-[#090908] shadow-[0_4px_18px_rgba(214,168,63,0.2)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(214,168,63,0.32)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F0D58A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090908] min-[430px]:px-6"
             >
               <span className="mirror-shine" aria-hidden="true" />
               <span className="relative z-10">Book an Appointment</span>
@@ -196,7 +190,7 @@ export default function Hero() {
 
             <Link
               to="/services"
-              className="mirror-button mirror-button-outline group relative inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-xl border border-[#D6A83F]/60 bg-[#11100D]/70 px-6 py-3 text-sm font-semibold text-[#F5F0E6] backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#F0D58A] hover:text-[#F0D58A] hover:shadow-[0_8px_26px_rgba(214,168,63,0.16)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F0D58A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090908]"
+              className="mirror-button mirror-button-outline group relative inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-xl border border-[#D6A83F]/60 bg-[#11100D]/70 px-5 py-3 text-sm font-semibold text-[#F5F0E6] backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#F0D58A] hover:text-[#F0D58A] hover:shadow-[0_8px_26px_rgba(214,168,63,0.16)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F0D58A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090908] min-[430px]:px-6"
             >
               <span className="mirror-shine" aria-hidden="true" />
               <span className="relative z-10">Explore Our Services</span>
@@ -209,7 +203,7 @@ export default function Hero() {
 
         {/* Benefits strip */}
         <motion.div
-          className="benefits-strip relative mt-12 grid grid-cols-1 overflow-hidden rounded-xl border border-[#D6A83F]/20 bg-[#0E0D0B]/85 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:grid-cols-3"
+          className="benefits-strip relative mt-10 grid grid-cols-1 overflow-hidden rounded-xl border border-[#D6A83F]/20 bg-[#0E0D0B]/85 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:mt-12 sm:grid-cols-3"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
@@ -269,6 +263,29 @@ export default function Hero() {
           ))}
         </motion.div>
       </div>
+
+      {/* Responsive background sizing */}
+      <style>{`
+        .hero-smile-background {
+          background-repeat: no-repeat;
+          background-position: right center;
+          background-size: cover;
+        }
+
+        @media (max-width: 639px) {
+          .hero-smile-background {
+            background-size: auto 65%;
+            background-position: right top;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .hero-smile-background {
+            background-size: auto 55%;
+            background-position: right top;
+          }
+        }
+      `}</style>
     </section>
   );
 }
