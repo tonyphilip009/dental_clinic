@@ -21,6 +21,33 @@ from .models import (
 from .otp import has_valid_verification
 
 
+# =========================================================
+# Image URL helper
+# =========================================================
+
+def get_image_url(image_field, known_images=None):
+    """
+    Return an existing mapped Cloudinary URL for legacy images.
+    For new uploads, return the URL provided by Django storage.
+    """
+    if not image_field:
+        return None
+
+    filename = image_field.name.replace("\\", "/").rsplit("/", 1)[-1]
+
+    if known_images and filename in known_images:
+        return known_images[filename]
+
+    try:
+        return image_field.url
+    except (ValueError, AttributeError):
+        return None
+
+
+# =========================================================
+# Services
+# =========================================================
+
 class ServiceSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
@@ -40,12 +67,12 @@ class ServiceSerializer(serializers.ModelSerializer):
             ),
         }
 
-        if not obj.image:
-            return None
+        return get_image_url(obj.image, cloudinary_images)
 
-        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
-        return cloudinary_images.get(filename)
 
+# =========================================================
+# Dentists
+# =========================================================
 
 class DentistSerializer(serializers.ModelSerializer):
     photo = serializers.SerializerMethodField()
@@ -66,18 +93,22 @@ class DentistSerializer(serializers.ModelSerializer):
             ),
         }
 
-        if not obj.photo:
-            return None
+        return get_image_url(obj.photo, cloudinary_images)
 
-        filename = obj.photo.name.replace("\\", "/").rsplit("/", 1)[-1]
-        return cloudinary_images.get(filename)
 
+# =========================================================
+# Testimonials
+# =========================================================
 
 class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
         fields = "__all__"
 
+
+# =========================================================
+# Gallery
+# =========================================================
 
 class GallerySerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -102,12 +133,12 @@ class GallerySerializer(serializers.ModelSerializer):
             ),
         }
 
-        if not obj.image:
-            return None
+        return get_image_url(obj.image, cloudinary_images)
 
-        filename = obj.image.name.replace("\\", "/").rsplit("/", 1)[-1]
-        return cloudinary_images.get(filename)
 
+# =========================================================
+# Appointment validation
+# =========================================================
 
 NAME_PATTERN = re.compile(
     r"^[^\W\d_]+(?:[ .'’\-]+[^\W\d_]+)*\.?$"
@@ -284,6 +315,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
         validated_data.pop("verification_token", None)
         return super().create(validated_data)
 
+
+# =========================================================
+# OTP serializers
+# =========================================================
 
 class OTPSendSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
