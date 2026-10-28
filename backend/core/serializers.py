@@ -1,3 +1,4 @@
+
 import re
 from datetime import timedelta
 
@@ -21,22 +22,69 @@ from .otp import has_valid_verification
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Service
-        fields = '__all__'
+        fields = "__all__"
+
+    def get_image(self, obj):
+        cloudinary_images = {
+            "services/images/complete-dental-checkup.png": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119641/complete-dental-checkup.png"
+            ),
+            "services/images/teeth-cleaning.png": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119646/teeth-cleaning.png"
+            ),
+        }
+
+        if not obj.image:
+            return None
+
+        image_name = obj.image.name
+
+        if image_name in cloudinary_images:
+            return cloudinary_images[image_name]
+
+        return obj.image.url
 
 
 class DentistSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Dentist
-        fields = '__all__'
+        fields = "__all__"
+
+    def get_image(self, obj):
+        cloudinary_images = {
+            "dentists/WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119366/WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp"
+            ),
+            "dentists/WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119587/WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp"
+            ),
+        }
+
+        if not obj.image:
+            return None
+
+        image_name = obj.image.name
+
+        if image_name in cloudinary_images:
+            return cloudinary_images[image_name]
+
+        return obj.image.url
 
 
 class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
-        fields = '__all__'
-
+        fields = "__all__"
 
 
 class GallerySerializer(serializers.ModelSerializer):
@@ -62,13 +110,15 @@ class GallerySerializer(serializers.ModelSerializer):
             ),
         }
 
+        if not obj.image:
+            return None
+
         image_name = obj.image.name
 
         if image_name in cloudinary_images:
             return cloudinary_images[image_name]
 
-        return obj.image.url if obj.image else None
-
+        return obj.image.url
 
 
 NAME_PATTERN = re.compile(
@@ -79,7 +129,6 @@ MESSAGE_LIMIT = 500
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
-
     verification_token = serializers.CharField(
         write_only=True,
         error_messages={
@@ -148,10 +197,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             )
 
         try:
-            phone = phonenumbers.parse(
-                value,
-                None,
-            )
+            phone = phonenumbers.parse(value, None)
         except phonenumbers.NumberParseException:
             raise serializers.ValidationError(
                 "Enter a valid international phone number "
@@ -203,9 +249,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
                 "Appointment date cannot be in the past."
             )
 
-        if value > today + timedelta(
-            days=BOOKING_WINDOW_DAYS
-        ):
+        if value > today + timedelta(days=BOOKING_WINDOW_DAYS):
             raise serializers.ValidationError(
                 f"Appointments can only be booked up to "
                 f"{BOOKING_WINDOW_DAYS} days in advance."
@@ -234,10 +278,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if not dentist or not date or not time_slot:
             return attrs
 
-        available = get_available_slots(
-            dentist,
-            date,
-        )
+        available = get_available_slots(dentist, date)
 
         if time_slot not in available:
             raise serializers.ValidationError(
@@ -256,9 +297,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# ============================================================
-# Day 29 - Email OTP Serializers
-# ============================================================
+# Email OTP Serializers
 
 class OTPSendSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
