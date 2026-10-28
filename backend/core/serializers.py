@@ -38,10 +38,37 @@ class TestimonialSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class GallerySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Gallery
-        fields = '__all__'
+        fields = "__all__"
+
+    def get_image(self, obj):
+        cloudinary_images = {
+            "gallery/Modern_Dental_Care_in_Action.webp": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119608/Modern_Dental_Care_in_Action.webp"
+            ),
+            "gallery/Modern_Dental_Suite_with_Panoramic_X-ray.webp": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119625/Modern_Dental_Suite_with_Panoramic_X-ray.webp"
+            ),
+            "gallery/Luxurious_House_of_Dental_Reception.webp": (
+                "https://res.cloudinary.com/zzwvvvp2/image/upload/"
+                "v1793119601/Luxurious_House_of_Dental_Reception.webp"
+            ),
+        }
+
+        image_name = obj.image.name
+
+        if image_name in cloudinary_images:
+            return cloudinary_images[image_name]
+
+        return obj.image.url if obj.image else None
+
 
 
 NAME_PATTERN = re.compile(
