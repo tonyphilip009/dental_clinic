@@ -1,0 +1,185 @@
+[
+{
+  "model": "core.service",
+  "pk": 5,
+  "fields": {
+    "name": "Complete Dental Check-up",
+    "description": "A complete oral examination with advice on keeping your teeth and gums healthy.",
+    "icon": "",
+    "image": "services/images/complete-dental-checkup.png",
+    "price": "500.00",
+    "benefits": [
+      "Assessment of teeth and gum health",
+      "Early identification of potential dental problems",
+      "Personalised oral hygiene recommendations",
+      "Guidance on maintaining a healthy smile"
+    ],
+    "treatment_steps": [
+      {
+        "title": "Dental examination",
+        "description": "Your dentist examines your teeth, gums, and overall oral health."
+      },
+      {
+        "title": "Discussion and advice",
+        "description": "Discuss your concerns and receive recommendations tailored to your oral health needs."
+      },
+      {
+        "title": "Next steps",
+        "description": "Your dentist explains whether preventive care or further assessment may be helpful."
+      }
+    ],
+    "aftercare": [
+      "Brush twice daily using fluoride toothpaste.",
+      "Clean between your teeth every day.",
+      "Follow your dentist's recommended check-up schedule."
+    ],
+    "created_at": "2026-10-02T04:54:29.069Z"
+  }
+},
+{
+  "model": "core.service",
+  "pk": 6,
+  "fields": {
+    "name": "Teeth Cleaning",
+    "description": "Professional scaling and polishing to remove plaque, tartar, and surface stains.",
+    "icon": "",
+    "image": "services/images/teeth-cleaning.png",
+    "price": "1200.00",
+    "benefits": [
+      "Removal of plaque and tartar deposits",
+      "Support for healthier gums",
+      "A cleaner, fresher-feeling mouth",
+      "Personalised daily oral hygiene advice"
+    ],
+    "treatment_steps": [
+      {
+        "title": "Oral health assessment",
+        "description": "Your dentist or hygienist assesses your teeth and gum health."
+      },
+      {
+        "title": "Professional cleaning",
+        "description": "Suitable professional instruments are used to remove plaque and tartar deposits."
+      },
+      {
+        "title": "Finishing advice",
+        "description": "Receive guidance on brushing, cleaning between your teeth, and maintaining your oral health."
+      }
+    ],
+    "aftercare": [
+      "Continue brushing gently twice daily.",
+      "Clean between your teeth every day.",
+      "Follow your dentist's advice if your gums feel sensitive after cleaning."
+    ],
+    "created_at": "2026-10-02T04:54:52.863Z"
+  }
+},
+{
+  "model": "core.dentist",
+  "pk": 6,
+  "fields": {
+    "name": "Dr. Alex Morgan",
+    "specialization": "General Dentistry",
+    "bio": "Dr. Morgan focuses on preventive care and gentle treatment for patients of all ages.",
+    "photo": "dentists/WhatsApp_Image_2026-07-09_at_11.28.18_AM.webp",
+    "years_experience": 12
+  }
+},
+{
+  "model": "core.dentist",
+  "pk": 7,
+  "fields": {
+    "name": "ammu",
+    "specialization": "kk",
+    "bio": "",
+    "photo": "dentists/WhatsApp_Image_2026-09-23_at_11.05.12_PM.webp",
+    "years_experience": 1
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 2,
+  "fields": {
+    "patient_name": "Priya Nair",
+    "rating": 3,
+    "message": "I was nervous about my root canal, but the team made me feel completely at ease. No pain at all.",
+    "photo": "testimonials/WhatsApp_Image_2026-09-23_at_10.23.24_PM.webp"
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 3,
+  "fields": {
+    "patient_name": "Priya Nair",
+    "rating": 5,
+    "message": "5 Stars",
+    "photo": ""
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 4,
+  "fields": {
+    "patient_name": "Arun Kumar",
+    "rating": 5,
+    "message": "Clean clinic, friendly staff, and my whitening results were better than I expected.",
+    "photo": ""
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 5,
+  "fields": {
+    "patient_name": "Meera Thomas",
+    "rating": 5,
+    "message": "Booking was easy and the doctor explained every step of my treatment clearly.",
+    "photo": ""
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 6,
+  "fields": {
+    "patient_name": "Joseph Mathew",
+    "rating": 5,
+    "message": "My kids actually look forward to their dental check-ups now. Highly recommended.",
+    "photo": ""
+  }
+},
+{
+  "model": "core.testimonial",
+  "pk": 7,
+  "fields": {
+    "patient_name": "Sneha Pillai",
+    "rating": 5,
+    "message": "Sneha Pillai",
+    "photo": ""
+  }
+},
+{
+  "model": "core.gallery",
+  "pk": 3,
+  "fields": {
+    "title": "House of Dental Reception",
+    "image": "gallery/Luxurious_House_of_Dental_Reception.webp",
+    "uploaded_at": "2026-10-18T12:32:34.699Z"
+  }
+},
+{
+  "model": "core.gallery",
+  "pk": 4,
+  "fields": {
+    "title": "Modern Dental Treatment Room",
+    "image": "gallery/Modern_Dental_Suite_with_Panoramic_X-ray.webp",
+    "uploaded_at": "2026-10-18T12:33:38.299Z"
+  }
+},
+{
+  "model": "core.gallery",
+  "pk": 5,
+  "fields": {
+    "title": "treatment",
+    "image": "gallery/Modern_Dental_Care_in_Action.webp",
+    "uploaded_at": "2026-10-18T12:34:43.752Z"
+  }
+}
+]

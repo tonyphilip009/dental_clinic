@@ -14,7 +14,6 @@ function AnimatedTooth() {
       className="tooth-float relative inline-flex items-center justify-center"
       aria-hidden="true"
     >
-      {/* Tooth icon */}
       <svg
         viewBox="0 0 64 72"
         className="h-10 w-10 tooth-glow"
@@ -37,12 +36,10 @@ function AnimatedTooth() {
         />
       </svg>
 
-      {/* Upper sparkle */}
       <span className="tooth-sparkle absolute -right-1 top-0 text-sm text-[#D6A83F]">
         ✦
       </span>
 
-      {/* Lower sparkle */}
       <span className="tooth-sparkle-delayed absolute -bottom-1 -left-1 text-xs text-[#F0D58A]">
         ✧
       </span>
@@ -111,13 +108,13 @@ export default function Hero() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="relative isolate min-h-[780px] overflow-hidden bg-[#090908] text-[#F5F0E6] sm:min-h-[820px] lg:min-h-[850px]">
+    <section className="relative isolate min-h-[700px] overflow-hidden bg-[#090908] text-[#F5F0E6] sm:min-h-[820px] lg:min-h-[850px]">
       {/* Background smile image */}
       <div
-        className="absolute inset-0 -z-30 bg-cover bg-no-repeat"
+        className="absolute inset-0 -z-30 bg-no-repeat bg-[length:auto_100%] sm:bg-cover"
         style={{
           backgroundImage: "url('/dental-smile-hero.png')",
-          backgroundPosition: "center right",
+          backgroundPosition: "70% center",
         }}
         aria-hidden="true"
       />
@@ -135,7 +132,7 @@ export default function Hero() {
       />
 
       {/* Main hero content */}
-      <div className="mx-auto flex min-h-[780px] max-w-7xl flex-col justify-between px-5 pb-7 pt-32 sm:min-h-[820px] sm:px-8 sm:pb-8 sm:pt-36 lg:min-h-[850px] lg:px-12 lg:pt-40">
+      <div className="mx-auto flex min-h-[700px] max-w-7xl flex-col justify-between px-5 pb-7 pt-32 sm:min-h-[820px] sm:px-8 sm:pb-8 sm:pt-36 lg:min-h-[850px] lg:px-12 lg:pt-40">
         <div className="max-w-2xl">
           {/* Welcome label */}
           <motion.div
